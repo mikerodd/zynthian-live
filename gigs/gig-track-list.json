@@ -10,18 +10,6 @@
           "notes": "Anastacia | 120 BPM"
         },
         {
-          "name": "You shook me all night long",
-          "chart": "you-shook-me-all-night-long.html",
-          "zs3_id": "zs3-2",
-          "notes": ""
-        },
-        {
-          "name": "Long train runnin",
-          "chart": "long-train-runnin.html",
-          "zs3_id": "zs3-3",
-          "notes": ""
-        },
-        {
           "name": "Crazy",
           "chart": "crazy.html",
           "zs3_id": "zs3-4",
@@ -34,34 +22,10 @@
           "notes": "Black Pumas | 89 BPM"
         },
         {
-          "name": "Cosmic girl",
-          "chart": "cosmic-girl.html",
-          "zs3_id": "zs3-6",
-          "notes": ""
-        },
-        {
-          "name": "Stop this flame",
-          "chart": "stop-this-flame.html",
-          "zs3_id": "zs3-7",
-          "notes": ""
-        },
-        {
           "name": "Somebody's else guy",
           "chart": "somebody-else-guy.html",
           "zs3_id": "zs3-8",
           "notes": "Jocelyn Brown | 103 BPM"
-        },
-        {
-          "name": "Superstition",
-          "chart": "superstition.html",
-          "zs3_id": "zs3-9",
-          "notes": ""
-        },
-        {
-          "name": "Never too much",
-          "chart": "never-too-much.html",
-          "zs3_id": "zs3-10",
-          "notes": ""
         }
       ]
     }],
