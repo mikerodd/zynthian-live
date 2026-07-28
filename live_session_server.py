@@ -7,7 +7,6 @@ import logging
 import asyncio
 import tornado.web
 import tornado.ioloop
-import tornado.websocket
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from zs3_handler import init_osc, load_zs3
@@ -20,7 +19,6 @@ logging.getLogger().setLevel(level=logging.INFO)
 STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 
-ws_clients = set()
 current_state = {
     'gig_id': None,
     'active_track': None
@@ -104,17 +102,6 @@ class ApiSelectTrackHandler(BaseHandler):
                 'zs3_loaded': success
             })
             logging.info("Track {} selected: {}".format(idx, track.get('name', '')))
-            message = json.dumps({
-                'type': 'track_changed',
-                'gig_id': gig_id,
-                'active_track': idx,
-                'track': track
-            })
-            for client in list(ws_clients):
-                try:
-                    client.write_message(message)
-                except Exception:
-                    pass
         except ValueError:
             self.write({'error': 'Invalid track index'})
 
@@ -125,28 +112,6 @@ class ApiStateHandler(BaseHandler):
             self.write(current_state)
         else:
             self.write({'gig_id': gig_id, 'active_track': None})
-
-
-class WebSocketHandler(tornado.websocket.WebSocketHandler):
-    def check_origin(self, origin):
-        return True
-
-    def open(self):
-        ws_clients.add(self)
-        logging.info("WebSocket client connected (total: {})".format(len(ws_clients)))
-        if current_state['active_track'] is not None:
-            self.write_message(json.dumps({
-                'type': 'track_changed',
-                'gig_id': current_state['gig_id'],
-                'active_track': current_state['active_track']
-            }))
-
-    def on_close(self):
-        ws_clients.discard(self)
-        logging.info("WebSocket client disconnected (total: {})".format(len(ws_clients)))
-
-    def on_message(self, message):
-        pass
 
 
 def make_app():
@@ -164,7 +129,6 @@ def make_app():
         (r'/chart/([^/]+)/([^/]+)$', ChartHandler),
         (r'/api/select/([^/]+)/([^/]+)$', ApiSelectTrackHandler),
         (r'/api/state/([^/]+)$', ApiStateHandler),
-        (r'/ws$', WebSocketHandler),
         (r'/static/(.*)$', tornado.web.StaticFileHandler, {'path': STATIC_DIR}),
     ], **settings)
 
