@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Gigs - Zynthian Live Session{% end %}
+{% block content %}
+<div class="container">
+    <header class="header">
+        <h1>Live Sessions</h1>
+    </header>
+    <div class="gig-list">
+        {% if gigs %}
+            {% for gig in gigs %}
+            <a href="/gig/{{ gig['id'] }}" class="gig-card">
+                <div class="gig-name">{{ gig['name'] }}</div>
+                <div class="gig-info">
+                    {% if gig['description'] %}
+                        <span class="gig-description">{{ gig['description'] }}</span>
+                    {% end %}
+                    <span class="gig-tracks">{{ gig['track_count'] }} tracks</span>
+                </div>
+            </a>
+            {% end %}
+        {% else %}
+            <div class="empty-state">
+                <p>No gigs found.</p>
+                <p class="hint">Create a JSON file in<br><code>/zynthian/zynthian-my-data/gigs/</code></p>
+            </div>
+        {% end %}
+    </div>
+</div>
+{% end %}

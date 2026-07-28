@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>{{ title }} - Zynthian Live Session</title>
+    <link rel="stylesheet" href="/static/css/live-session.css">
+    <style>
+        body { background: #fff; color: #000; overflow: auto; }
+        .chart-nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: #222; padding: 10px 15px;
+            display: flex; align-items: center; border-bottom: 1px solid #444;
+        }
+        .chart-nav a {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 44px; height: 44px; font-size: 24px; color: #fff;
+            text-decoration: none; border-radius: 8px; background: #444;
+        }
+        .chart-nav a:active { background: #555; }
+        .chart-nav span { margin-left: 12px; color: #ccc; font-size: 16px; }
+        .chart-nav .notes { margin-left: 12px; color: #888; font-size: 13px; }
+        .chart-body { padding-top: 64px; }
+    </style>
+</head>
+<body>
+    <div class="chart-nav">
+        <a href="/gig/{{ gig_id }}">&#8592;</a>
+        <span>{{ title }}</span>
+        {% if notes %}
+        <span class="notes">{{ notes }}</span>
+        {% end %}
+    </div>
+    <div class="chart-body">
+        {% raw chart_body %}
+    </div>
+</body>
+</html>
