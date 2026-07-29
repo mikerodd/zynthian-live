@@ -5,7 +5,7 @@ Web-based live session manager for Zynthian. Displays chord charts, keyboard spl
 ## Structure
 
 ```
-zynthian-live/           # Server code (deployed to Zynthian)
+zynthian-live/
 ├── lib/
 │   ├── gig_handler.py   — reads config.json from my-data, serves gigs/tracks
 │   └── zs3_handler.py   — OSC bridge to load ZS3 sub-snapshots
@@ -14,35 +14,11 @@ zynthian-live/           # Server code (deployed to Zynthian)
 ├── live_session_server.py  — Tornado web server
 ├── live_session.sh      — startup script
 └── install.sh           — deploy server code to Zynthian
-
-gigs-v2/                 # Build pipeline (runs on computer)
-├── live-session/
-│   ├── config.json      — gig/snapshot/track definitions (single source of truth)
-│   └── gigs/            — generated chart HTML files (output of build-v2.py)
-├── *.json               — per-song data (chords, structure, keyboard splits)
-├── *.ly                 — LilyPond source for chord diagrams
-├── build-v2.py          — generates HTML with base64-embedded SVGs
-├── genkeyb2.py          — generates keyboard split SVGs
-├── gen-tracklist.py     — downloads ZSS from Zynthian, outputs tracks
-└── install.sh           — build charts + copy config + charts to Zynthian my-data
-
-# On Zynthian, data lives under $ZYNTHIAN_MY_DATA_DIR/live-session/
-#   config.json  — gig/snapshot/track definitions
-#   gigs/        — generated chart HTML files
 ```
 
-## Usage (on computer — build charts)
+## Deploy
 
 ```bash
-cd gigs-v2
-# Edit config.json and song data as needed, then:
-./install.sh
-```
-
-## Usage (on computer — deploy server code)
-
-```bash
-cd zynthian-live
 ./install.sh
 ```
 
