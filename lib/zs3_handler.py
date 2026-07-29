@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import logging
 
 try:
@@ -33,4 +34,26 @@ def load_zs3(zs3_id):
         return True
     except Exception as e:
         logging.error("Failed to send ZS3_LOAD '{}': {}".format(zs3_id, e))
+        return False
+
+
+def _get_master_chan():
+    val = os.environ.get("ZYNTHIAN_MIDI_MASTER_CHANNEL", "16")
+    return int(val) - 1
+
+
+def load_snapshot(bank, program):
+    if ZYNTHIAN_UI_OSC_ADDR is None:
+        logging.warning("OSC not initialized, cannot load snapshot bank={} program={}".format(bank, program))
+        return False
+    try:
+        chan = _get_master_chan()
+        liblo.send(ZYNTHIAN_UI_OSC_ADDR, "/CUIA/ZYN_CC", chan, 0, bank)
+        import time
+        time.sleep(0.05)
+        liblo.send(ZYNTHIAN_UI_OSC_ADDR, "/CUIA/PROGRAM_CHANGE", program, chan)
+        logging.info("Sent bank={} program={} on master channel".format(bank, program))
+        return True
+    except Exception as e:
+        logging.error("Failed to send snapshot bank={} program={}: {}".format(bank, program, e))
         return False

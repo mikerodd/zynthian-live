@@ -24,6 +24,12 @@ def _load_track_list():
     with open(CONFIG_PATH, 'r') as f:
         config = json.load(f)
 
+    def _parse_bank_program(snapshot):
+        bank = int(snapshot[:3])
+        after_slash = snapshot.split("/", 1)[1] if "/" in snapshot else ""
+        program = int(after_slash[:3]) if after_slash else 0
+        return bank, program
+
     tracks_by_snapshot = {}
     for entry in config.get("track_detail", []):
         snap = entry["snapshot"]
@@ -36,6 +42,7 @@ def _load_track_list():
             os.path.splitext(os.path.basename(zss))[0]
         )
         description = ds.get("description", "")
+        bank, program = _parse_bank_program(zss)
         tracks = []
         for t in tracks_by_snapshot.get(zss, []):
             chart = t["html_filename"]
@@ -45,12 +52,16 @@ def _load_track_list():
             tracks.append({
                 "name": track_name,
                 "chart": chart,
+                "bank": bank,
+                "program": program,
                 "zs3_id": t["subsnapshot"],
                 "notes": t.get("notes", "")
             })
         gigs_out.append({
             "name": name,
             "description": description,
+            "bank": bank,
+            "program": program,
             "tracks": tracks
         })
 
@@ -66,7 +77,9 @@ def list_gigs():
             'id': gig_id,
             'name': gig.get('name', gig_id),
             'description': gig.get('description', ''),
-            'track_count': len(gig.get('tracks', []))
+            'track_count': len(gig.get('tracks', [])),
+            'bank': gig.get('bank'),
+            'program': gig.get('program')
         })
     return gigs
 

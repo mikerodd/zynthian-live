@@ -8,7 +8,8 @@
     <div class="gig-list">
         {% if gigs %}
             {% for gig in gigs %}
-            <a href="/gig/{{ gig['id'] }}" class="gig-card">
+            <a href="/gig/{{ gig['id'] }}" class="gig-card"
+               data-bank="{{ gig.get('bank', '') }}" data-program="{{ gig.get('program', '') }}">
                 <div class="gig-name">{{ gig['name'] }}</div>
                 <div class="gig-info">
                     {% if gig['description'] %}
@@ -26,4 +27,25 @@
         {% end %}
     </div>
 </div>
+{% end %}
+{% block script %}
+<script>
+    var cards = document.querySelectorAll('.gig-card');
+    for (var i = 0; i < cards.length; i++) {
+        cards[i].addEventListener('click', function(e) {
+            var bank = this.getAttribute('data-bank');
+            var program = this.getAttribute('data-program');
+            var href = this.getAttribute('href');
+            if (!bank || !program) return;
+            if (!confirm("Load this snapshot?")) return;
+            e.preventDefault();
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/load-snapshot/' + bank + '/' + program, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() { window.location.href = href; };
+            xhr.onerror = function() { window.location.href = href; };
+            xhr.send(JSON.stringify({}));
+        });
+    }
+</script>
 {% end %}
