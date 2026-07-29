@@ -1,25 +1,18 @@
 {% extends "base.html" %}
 {% block title %}{{ gig.get('name', 'Gig') }} - Zynthian Live Session{% end %}
 {% block content %}
-<div class="live-container">
-    <div class="track-sidebar">
-        <div class="sidebar-header">
-            <a href="/" class="btn-back" title="Back to gigs">&larr;</a>
-            <h2 class="gig-title">{{ gig.get('name', '') }}</h2>
-        </div>
-        <div class="track-list" id="track-list">
-            {% for i, track in enumerate(gig.get('tracks', [])) %}
-            <button class="track-btn" data-index="{{ i }}" data-zs3="{{ track.get('zs3_id', '') }}">
-                <span class="track-number">{{ i + 1 }}</span>
-                <span class="track-name">{{ track.get('name', 'Track ' + str(i + 1)) }}</span>
-            </button>
-            {% end %}
-        </div>
+<div class="track-full">
+    <div class="track-header">
+        <a href="/" class="btn-back" title="Back to gigs">&larr;</a>
+        <h2 class="gig-title">{{ gig.get('name', '') }}</h2>
     </div>
-    <div class="chart-area" id="chart-area">
-        <div class="chart-placeholder" id="chart-placeholder">
-            Select a track
-        </div>
+    <div class="track-list" id="track-list">
+        {% for i, track in enumerate(gig.get('tracks', [])) %}
+        <button class="track-btn" data-index="{{ i }}">
+            <span class="track-number">{{ i + 1 }}</span>
+            <span class="track-name">{{ track.get('name', 'Track ' + str(i + 1)) }}</span>
+        </button>
+        {% end %}
     </div>
 </div>
 {% end %}

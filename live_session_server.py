@@ -9,7 +9,7 @@ import tornado.web
 import tornado.ioloop
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
-from zs3_handler import init_osc, load_zs3
+from zs3_handler import init_osc, load_snapshot, load_zs3
 from gig_handler import list_gigs, load_gig, get_chart_path, list_charts
 
 logging.basicConfig(format='%(levelname)s:%(module)s: %(message)s',
@@ -18,11 +18,6 @@ logging.getLogger().setLevel(level=logging.INFO)
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
-
-current_state = {
-    'gig_id': None,
-    'active_track': None
-}
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -76,7 +71,6 @@ class ChartHandler(BaseHandler):
 
 class ApiSelectTrackHandler(BaseHandler):
     def post(self, gig_id, track_index):
-        logging.info("POST /api/select/{}/{} received".format(gig_id, track_index))
         gig = load_gig(gig_id)
         if gig is None:
             self.write({'error': 'Gig not found'})
@@ -89,29 +83,21 @@ class ApiSelectTrackHandler(BaseHandler):
                 return
             track = tracks[idx]
             zs3_id = track.get('zs3_id')
-            if zs3_id:
-                success = load_zs3(zs3_id)
-            else:
-                success = True
-            current_state['gig_id'] = gig_id
-            current_state['active_track'] = idx
-            self.write({
-                'success': True,
-                'track': track,
-                'active_track': idx,
-                'zs3_loaded': success
-            })
-            logging.info("Track {} selected: {}".format(idx, track.get('name', '')))
+            success = load_zs3(zs3_id) if zs3_id else True
+            self.write({'success': True, 'zs3_loaded': success})
         except ValueError:
             self.write({'error': 'Invalid track index'})
 
 
-class ApiStateHandler(BaseHandler):
-    def get(self, gig_id):
-        if current_state['gig_id'] == gig_id:
-            self.write(current_state)
-        else:
-            self.write({'gig_id': gig_id, 'active_track': None})
+class ApiLoadSnapshotHandler(BaseHandler):
+    def post(self, bank, program):
+        logging.info("POST /api/load-snapshot/{}/{}".format(bank, program))
+        try:
+            success = load_snapshot(int(bank), int(program))
+            self.write({'success': success})
+        except Exception as e:
+            logging.error("load-snapshot failed: {}".format(e))
+            self.write({'success': False, 'error': str(e)})
 
 
 def make_app():
@@ -128,7 +114,7 @@ def make_app():
         (r'/gig/([^/]+)$', LiveViewHandler),
         (r'/chart/([^/]+)/([^/]+)$', ChartHandler),
         (r'/api/select/([^/]+)/([^/]+)$', ApiSelectTrackHandler),
-        (r'/api/state/([^/]+)$', ApiStateHandler),
+        (r'/api/load-snapshot/([^/]+)/([^/]+)$', ApiLoadSnapshotHandler),
         (r'/static/(.*)$', tornado.web.StaticFileHandler, {'path': STATIC_DIR}),
     ], **settings)
 

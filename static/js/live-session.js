@@ -14,6 +14,7 @@ function selectTrack(gigId, trackIndex) {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/select/' + encodeURIComponent(gigId) + '/' + trackIndex, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.onload = function() { window.location.href = '/chart/' + encodeURIComponent(gigId) + '/' + encodeURIComponent(track.chart); };
+    xhr.onerror = function() { window.location.href = '/chart/' + encodeURIComponent(gigId) + '/' + encodeURIComponent(track.chart); };
     xhr.send(JSON.stringify({}));
-    window.location.href = '/chart/' + encodeURIComponent(gigId) + '/' + encodeURIComponent(track.chart);
 }
