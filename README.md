@@ -44,6 +44,5 @@ zynthian-live server (reads from my-data, serves to browser)
 
 ## Dependencies
 
-- Zynthian OS (tested)
 - Python 3 with Tornado and pyliblo3
 - Works on iPad 2+ / any device with a browser
