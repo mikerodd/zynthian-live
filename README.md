@@ -6,17 +6,18 @@ Web-based live session manager for Zynthian. Displays chord charts, keyboard spl
 
 ```
 zynthian-live/
-├── gigs/
-│   ├── gig-track-list.json   — gig definitions and track list
-│   └── *.html                — generated chart files
 ├── lib/
-│   ├── gig_handler.py        — loads gig/track data from gig-track-list.json
+│   ├── gig_handler.py        — reads config.json from my-data, serves gigs/tracks
 │   └── zs3_handler.py        — OSC bridge to load ZS3 sub-snapshots
 ├── templates/                — Tornado HTML templates
 ├── static/                   — CSS and JS
 ├── live_session_server.py    — Tornado web server
 ├── live_session.sh           — startup script
-└── install.sh                — build + deploy to Zynthian
+└── install.sh                — deploy to Zynthian
+
+# live-session data lives on Zynthian under $ZYNTHIAN_MY_DATA_DIR/live-session/
+#   config.json  — gig/snapshot/track definitions
+#   gigs/        — generated chart HTML files
 ```
 
 ## Usage (on computer)

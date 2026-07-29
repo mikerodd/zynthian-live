@@ -1,22 +1,60 @@
 # -*- coding: utf-8 -*-
 import os
+import re
 import json
 import logging
 
-BASE_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
-GIGS_DIR = os.path.join(BASE_DIR, 'gigs')
+MY_DATA_DIR = os.environ.get(
+    'ZYNTHIAN_MY_DATA_DIR',
+    '/zynthian/zynthian-my-data'
+)
+CONFIG_PATH = os.path.join(MY_DATA_DIR, 'live-session', 'config.json')
+GIGS_BUILD_DIR = os.path.join(MY_DATA_DIR, 'live-session', 'gigs')
 
-GIG_TRACK_LIST = os.path.join(GIGS_DIR, 'gig-track-list.json')
-GIGS_BUILD_DIR = os.path.join(GIGS_DIR, 'out')
-if not os.path.isdir(GIGS_BUILD_DIR):
-    GIGS_BUILD_DIR = GIGS_DIR
+
+def _slug_to_name(slug):
+    name = slug.replace("-", " ")
+    name = re.sub(r"(?:^| )\w", lambda m: m.group().upper(), name)
+    return name
 
 
 def _load_track_list():
-    if os.path.isfile(GIG_TRACK_LIST):
-        with open(GIG_TRACK_LIST, 'r') as f:
-            return json.load(f)
-    return {}
+    if not os.path.isfile(CONFIG_PATH):
+        return {"gigs": []}
+    with open(CONFIG_PATH, 'r') as f:
+        config = json.load(f)
+
+    tracks_by_snapshot = {}
+    for entry in config.get("track_detail", []):
+        snap = entry["snapshot"]
+        tracks_by_snapshot.setdefault(snap, []).append(entry)
+
+    gigs_out = []
+    for ds in config.get("displayed_snapshots", []):
+        zss = ds["zss_name"]
+        name = ds.get("name") or _slug_to_name(
+            os.path.splitext(os.path.basename(zss))[0]
+        )
+        description = ds.get("description", "")
+        tracks = []
+        for t in tracks_by_snapshot.get(zss, []):
+            chart = t["html_filename"]
+            if chart.startswith("gigs/"):
+                chart = chart[5:]
+            track_name = _slug_to_name(os.path.splitext(chart)[0])
+            tracks.append({
+                "name": track_name,
+                "chart": chart,
+                "zs3_id": t["subsnapshot"],
+                "notes": t.get("notes", "")
+            })
+        gigs_out.append({
+            "name": name,
+            "description": description,
+            "tracks": tracks
+        })
+
+    return {"gigs": gigs_out}
 
 
 def list_gigs():
