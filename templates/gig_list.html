@@ -15,7 +15,7 @@
                     {% if gig['description'] %}
                         <span class="gig-description">{{ gig['description'] }}</span>
                     {% end %}
-                    <span class="gig-tracks">{{ gig['track_count'] }} tracks</span>
+                    <span class="gig-tracks">{{ gig['track_count'] }} track{% if gig['track_count'] != 1 %}s{% end %}</span>
                 </div>
             </a>
             {% end %}
