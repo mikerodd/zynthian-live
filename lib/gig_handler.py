@@ -30,10 +30,9 @@ def _load_track_list():
         program = int(after_slash[:3]) if after_slash else 0
         return bank, program
 
-    tracks_by_snapshot = {}
+    tracks_by_id = {}
     for entry in config.get("track_detail", []):
-        snap = entry["snapshot"]
-        tracks_by_snapshot.setdefault(snap, []).append(entry)
+        tracks_by_id[str(entry.get("id"))] = entry
 
     gigs_out = []
     for ds in config.get("displayed_snapshots", []):
@@ -44,7 +43,11 @@ def _load_track_list():
         description = ds.get("description", "")
         bank, program = _parse_bank_program(zss)
         tracks = []
-        for t in tracks_by_snapshot.get(zss, []):
+        # A snapshot with no "tracks" array (or an empty one) has 0 tracks.
+        for tid in ds.get("tracks", []):
+            t = tracks_by_id.get(str(tid))
+            if t is None:
+                continue
             chart = t["html_filename"]
             if chart.startswith("gigs/"):
                 chart = chart[5:]
