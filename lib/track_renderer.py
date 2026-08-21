@@ -33,23 +33,23 @@ body {
 }
 .chart-nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    background: #222; padding: 10px 15px;
+    background: #f0f0f0; padding: 10px 15px;
     display: -webkit-box; display: -webkit-flex; display: flex;
     -webkit-align-items: center; align-items: center;
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid #ddd;
 }
 .chart-nav a {
     display: -webkit-inline-box; display: -webkit-inline-flex;
     display: inline-flex;
     -webkit-align-items: center; align-items: center;
     -webkit-justify-content: center; justify-content: center;
-    width: 44px; height: 44px; font-size: 24px; color: #fff;
-    text-decoration: none; border-radius: 8px; background: #444;
+    width: 44px; height: 44px; font-size: 24px; color: #333;
+    text-decoration: none; border-radius: 8px; background: #ddd;
     -webkit-flex-shrink: 0; flex-shrink: 0;
 }
-.chart-nav a:active { background: #555; }
+.chart-nav a:active { background: #ccc; }
 .chart-nav .nav-title {
-    margin-left: 12px; color: #ccc; font-size: 16px;
+    margin-left: 12px; color: #333; font-size: 16px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .chart-nav .nav-notes {
@@ -63,13 +63,13 @@ body {
     -webkit-align-items: center; align-items: center;
     -webkit-justify-content: center; justify-content: center;
     width: 44px; height: 44px; font-size: 22px; font-weight: 700;
-    color: #fff; text-decoration: none; border-radius: 8px;
-    background: #444; border: none; cursor: pointer;
+    color: #333; text-decoration: none; border-radius: 8px;
+    background: #ddd; border: none; cursor: pointer;
     margin-left: 6px;
 }
-.chart-nav .transpose-btn:active { background: #666; }
+.chart-nav .transpose-btn:active { background: #ccc; }
 .chart-nav .transpose-val {
-    color: #aaa; font-size: 14px; min-width: 30px; text-align: center;
+    color: #555; font-size: 14px; min-width: 30px; text-align: center;
 }
 .chart-body {
     padding: 70px 16px 24px;
@@ -80,8 +80,11 @@ body {
 /* ── leadsheet chords ── */
 .ls-section-label {
     font-family: 'Permanent Marker', cursive;
-    font-size: 18px; font-weight: 700; margin: 18px 0 6px;
+    font-size: 16px; font-weight: 700; margin: 16px 0 5px;
     color: #333;
+    display: inline-block;
+    padding: 2px 10px;
+    border: 2px solid #333; border-radius: 10px;
 }
 .ls-line {
     display: -webkit-box; display: -webkit-flex; display: flex;
@@ -93,7 +96,7 @@ body {
     display: inline-flex;
     -webkit-flex-direction: column; flex-direction: column;
     -webkit-align-items: center; align-items: center;
-    border: 1px solid #999; border-radius: 4px;
+    border: none;
     padding: 4px 2px; margin: 2px;
     min-width: 64px;
 }
@@ -121,10 +124,22 @@ body {
     display: -webkit-inline-box; display: -webkit-inline-flex;
     display: inline-flex;
     -webkit-align-items: center; align-items: center;
-    font-family: sans-serif;
-    font-size: 18px; font-weight: 700; color: #000;
-    padding: 0 1px; min-width: 12px;
     -webkit-justify-content: center; justify-content: center;
+    min-width: 12px;
+    -webkit-align-self: stretch; align-self: stretch;
+}
+.ls-bar-stroke {
+    width: 2px; background: #000;
+    -webkit-align-self: stretch; align-self: stretch;
+}
+.ls-bar-dots {
+    display: -webkit-inline-flex; display: inline-flex;
+    -webkit-flex-direction: column; flex-direction: column;
+    -webkit-align-items: center; align-items: center;
+    gap: 3px; margin: 0 1px;
+}
+.ls-bar-dot {
+    width: 4px; height: 4px; background: #000; border-radius: 50%;
 }
 .ls-volta {
     font-size: 11px; color: #666; font-style: italic;
@@ -142,7 +157,7 @@ body {
     font-size: 12px; font-weight: 700; white-space: nowrap;
 }
 .track-table td {
-    border: 1px solid #000; padding: 4px 8px;
+    border: 1px solid #000; padding: 2px 8px;
     text-align: center; font-size: 12px; font-weight: 700;
     min-width: 32px;
 }
@@ -156,27 +171,66 @@ import re as _re
 _CHORD_ROOT = _re.compile(r'^([A-G])([#b]?.*)')
 
 
+def _format_note_root(note_str):
+    """Format a note/chord root with accidental in superscript.
+
+    ``Db``    → ``D<sup>b</sup>``
+    ``F#``    → ``F<sup>#</sup>``
+    ``C``     → ``C``
+    """
+    m = _CHORD_ROOT.match(note_str)
+    if not m:
+        return html_mod.escape(note_str)
+    root, ext = m.group(1), m.group(2)
+    if not ext:
+        return html_mod.escape(root)
+    return '{}<sup>{}</sup>'.format(
+        html_mod.escape(root), html_mod.escape(ext))
+
+
 def _format_chord(chord):
     """Format a chord string with the extension in superscript.
 
-    ``A9sus4``  → ``A<sup>9sus4</sup>``
-    ``Cmaj7``   → ``C<sup>maj7</sup>``
-    ``E-7/F#``  → ``E<sup>-7</sup>/F#``
+    ``A9sus4``    → ``A<sup>9sus4</sup>``
+    ``Cmaj7``     → ``C<sup>maj7</sup>``
+    ``Db/Eb``     → ``D<sup>b</sup>/E<sup>b</sup>``
+    ``E-7/F#``    → ``E<sup>-7</sup>/F<sup>#</sup>``
     """
     # Handle slash bass separately — it stays at baseline
     parts = chord.split('/', 1)
     main = parts[0]
-    bass = '/' + parts[1] if len(parts) > 1 else ''
+    bass = parts[1] if len(parts) > 1 else None
 
     m = _CHORD_ROOT.match(main)
     if not m:
         return html_mod.escape(chord)
     root, ext = m.group(1), m.group(2)
-    esc_bass = html_mod.escape(bass)
+    if bass is None:
+        if not ext:
+            return html_mod.escape(root)
+        return '{}<sup>{}</sup>'.format(
+            html_mod.escape(root), html_mod.escape(ext))
+    # Bass note: use same root+accidental formatting
+    bass_fmt = _format_note_root(bass)
     if not ext:
-        return html_mod.escape(root) + esc_bass
-    return '{}<sup>{}</sup>{}'.format(
-        html_mod.escape(root), html_mod.escape(ext), esc_bass)
+        return html_mod.escape(root) + '/' + bass_fmt
+    return '{}<sup>{}</sup>/{}'.format(
+        html_mod.escape(root), html_mod.escape(ext), bass_fmt)
+
+
+_DOTS = '<div class="ls-bar-dots"><div class="ls-bar-dot"></div><div class="ls-bar-dot"></div></div>'
+_STROKE = '<div class="ls-bar-stroke"></div>'
+
+
+def _barline_html(bar_type):
+    """Return HTML for a barline element (pure CSS, no font rendering)."""
+    if bar_type == 'start-repeat':
+        return '<div class="ls-barline">{}{}</div>'.format(_STROKE, _DOTS)
+    if bar_type in ('end-repeat', 'end'):
+        return '<div class="ls-barline">{}{}</div>'.format(_DOTS, _STROKE)
+    if bar_type in ('final', 'double'):
+        return '<div class="ls-barline">{}{}</div>'.format(_STROKE, _STROKE)
+    return '<div class="ls-barline">{}</div>'.format(_STROKE)
 
 
 def _build_leadsheet_html(sheet, semitones):
@@ -205,10 +259,10 @@ def _build_leadsheet_html(sheet, semitones):
 
         # Bar line BEFORE the first measure (startBar)
         start_bar = line.get('startBar', '')
-        if start_bar == 'start-repeat':
-            parts.append('<div class="ls-barline">|:</div>')
-        elif start_bar == 'single':
-            parts.append('<div class="ls-barline">|</div>')
+        if start_bar == 'single':
+            parts.append(_barline_html('single'))
+        elif start_bar:
+            parts.append(_barline_html(start_bar))
 
         for mi, m in enumerate(measures):
             # Volta label above the measure box
@@ -240,16 +294,10 @@ def _build_leadsheet_html(sheet, semitones):
 
             # Bar line AFTER the measure (between this and next)
             bar = m.get('barLine', 'single')
-            if bar == 'start-repeat':
-                parts.append('<div class="ls-barline">|:</div>')
-            elif bar in ('end-repeat', 'end'):
-                parts.append('<div class="ls-barline">:|</div>')
-            elif bar == 'final':
-                parts.append('<div class="ls-barline">||</div>')
-            elif bar == 'double':
-                parts.append('<div class="ls-barline">||</div>')
+            if bar in ('start-repeat', 'end-repeat', 'end', 'final', 'double'):
+                parts.append(_barline_html(bar))
             elif mi < len(measures) - 1:
-                parts.append('<div class="ls-barline">|</div>')
+                parts.append(_barline_html('single'))
 
         parts.append('</div>')  # ls-line
 
