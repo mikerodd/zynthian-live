@@ -10,7 +10,8 @@ import tornado.ioloop
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from zs3_handler import init_osc, load_snapshot, load_zs3
-from gig_handler import list_gigs, load_gig, get_chart_path, list_charts
+from gig_handler import list_gigs, load_gig, get_track_paths
+from track_renderer import render_chart
 
 logging.basicConfig(format='%(levelname)s:%(module)s: %(message)s',
                     stream=sys.stderr, level=logging.INFO)
@@ -40,33 +41,35 @@ class LiveViewHandler(BaseHandler):
         if gig is None:
             self.send_error(404)
             return
-        charts = list_charts(gig_id)
         tracks_json = json.dumps(gig.get('tracks', []))
-        self.render('live_view.html', gig=gig, gig_id=gig_id, charts=charts, tracks_json=tracks_json)
+        self.render('live_view.html', gig=gig, gig_id=gig_id,
+                    tracks_json=tracks_json)
 
 
-class ChartHandler(BaseHandler):
-    def get(self, gig_id, filename):
-        fpath = get_chart_path(gig_id, filename)
-        if fpath is None:
+class ChartRenderHandler(BaseHandler):
+    def get(self, gig_id, track_idx):
+        paths = get_track_paths(gig_id, track_idx)
+        if paths is None:
             self.send_error(404)
             return
-        with open(fpath, 'r') as f:
-            raw = f.read()
-        import re
-        m = re.search(r'<body[^>]*>(.*)</body>', raw, re.DOTALL | re.IGNORECASE)
-        body = m.group(1) if m else raw
-        title = filename.replace('.html', '').replace('-', ' ').title()
-        notes = ''
-        gig = load_gig(gig_id)
-        if gig:
-            for track in gig.get('tracks', []):
-                if track.get('chart') == filename:
-                    title = track.get('name', title)
-                    notes = track.get('notes', '')
-                    break
-        self.set_header('Content-Type', 'text/html')
-        self.render('chart_view.html', gig_id=gig_id, title=title, notes=notes, chart_body=body)
+        semitones = int(self.get_argument('transpose', '0'))
+        try:
+            html = render_chart(
+                gig_id=gig_id,
+                track_json_path=paths['json_path'],
+                zss_path=paths['snapshot_path'],
+                zs3_id=paths['zs3_id'],
+                title=paths['name'],
+                notes=paths['notes'],
+                semitones=semitones,
+                input_devices=paths['input_devices'],
+            )
+        except Exception as e:
+            logging.error("render_chart failed: %s", e)
+            self.send_error(500)
+            return
+        self.set_header('Content-Type', 'text/html; charset=utf-8')
+        self.write(html)
 
 
 class ApiSelectTrackHandler(BaseHandler):
@@ -112,7 +115,7 @@ def make_app():
     return tornado.web.Application([
         (r'/$', GigListHandler),
         (r'/gig/([^/]+)$', LiveViewHandler),
-        (r'/chart/([^/]+)/([^/]+)$', ChartHandler),
+        (r'/chart/([^/]+)/(\d+)$', ChartRenderHandler),
         (r'/api/select/([^/]+)/([^/]+)$', ApiSelectTrackHandler),
         (r'/api/load-snapshot/([^/]+)/([^/]+)$', ApiLoadSnapshotHandler),
         (r'/static/(.*)$', tornado.web.StaticFileHandler, {'path': STATIC_DIR}),

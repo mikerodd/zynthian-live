@@ -1,6 +1,27 @@
 # -*- coding: utf-8 -*-
+"""Load gig/track configuration for the live session server.
+
+Config format (v2):
+{
+  "gigs": [
+    {
+      "name": "Gig Name",
+      "description": "...",
+      "snapshot_path": "path/to/snapshot.zss",
+      "tracks": [
+        {
+          "name": "Song Title",
+          "json_filename": "tracks/song.json",
+          "txt_filename": "tracks/song.txt",
+          "zs3_id": "zs3-10",
+          "notes": "Artist | 120 BPM"
+        }
+      ]
+    }
+  ]
+}
+"""
 import os
-import re
 import json
 import logging
 
@@ -9,101 +30,86 @@ MY_DATA_DIR = os.environ.get(
     '/zynthian/zynthian-my-data'
 )
 CONFIG_PATH = os.path.join(MY_DATA_DIR, 'live-session', 'config.json')
-GIGS_BUILD_DIR = os.path.join(MY_DATA_DIR, 'live-session', 'gigs')
 
 
-def _slug_to_name(slug):
-    name = slug.replace("-", " ")
-    name = re.sub(r"(?:^| )\w", lambda m: m.group().upper(), name)
-    return name
-
-
-def _load_track_list():
+def _load_config():
     if not os.path.isfile(CONFIG_PATH):
-        return {"gigs": []}
+        return {'gigs': []}
     with open(CONFIG_PATH, 'r') as f:
-        config = json.load(f)
+        return json.load(f)
 
-    def _parse_bank_program(snapshot):
-        bank = int(snapshot[:3])
-        after_slash = snapshot.split("/", 1)[1] if "/" in snapshot else ""
-        program = int(after_slash[:3]) if after_slash else 0
+
+def _base_dir():
+    return os.path.dirname(CONFIG_PATH)
+
+
+def _parse_bank_program(snapshot_path):
+    """Extract bank and program numbers from a snapshot path like '.../004-Gigs/002-set2.zss'."""
+    try:
+        basename = os.path.basename(snapshot_path)
+        parent = os.path.basename(os.path.dirname(snapshot_path))
+        bank = int(parent[:3])
+        program = int(basename[:3])
         return bank, program
+    except (ValueError, IndexError):
+        return None, None
 
-    tracks_by_id = {}
-    for entry in config.get("track_detail", []):
-        tracks_by_id[str(entry.get("id"))] = entry
 
-    gigs_out = []
-    for ds in config.get("displayed_snapshots", []):
-        zss = ds["zss_name"]
-        name = ds.get("name") or _slug_to_name(
-            os.path.splitext(os.path.basename(zss))[0]
-        )
-        description = ds.get("description", "")
-        bank, program = _parse_bank_program(zss)
-        tracks = []
-        # A snapshot with no "tracks" array (or an empty one) has 0 tracks.
-        for tid in ds.get("tracks", []):
-            t = tracks_by_id.get(str(tid))
-            if t is None:
-                continue
-            chart = t["html_filename"]
-            if chart.startswith("gigs/"):
-                chart = chart[5:]
-            track_name = _slug_to_name(os.path.splitext(chart)[0])
-            tracks.append({
-                "name": track_name,
-                "chart": chart,
-                "bank": bank,
-                "program": program,
-                "zs3_id": t["subsnapshot"],
-                "notes": t.get("notes", "")
-            })
-        gigs_out.append({
-            "name": name,
-            "description": description,
-            "bank": bank,
-            "program": program,
-            "tracks": tracks
-        })
-
-    return {"gigs": gigs_out}
+def _resolve(path):
+    """Resolve a config-relative path to an absolute path."""
+    if os.path.isabs(path):
+        return path
+    return os.path.normpath(os.path.join(_base_dir(), path))
 
 
 def list_gigs():
+    config = _load_config()
     gigs = []
-    data = _load_track_list()
-    for i, gig in enumerate(data.get('gigs', [])):
-        gig_id = str(i)
+    for i, gig in enumerate(config.get('gigs', [])):
+        snap = os.path.join(MY_DATA_DIR, gig.get('snapshot_path', ''))
+        bank, program = _parse_bank_program(snap)
         gigs.append({
-            'id': gig_id,
-            'name': gig.get('name', gig_id),
+            'id': str(i),
+            'name': gig.get('name', 'Gig {}'.format(i + 1)),
             'description': gig.get('description', ''),
             'track_count': len(gig.get('tracks', [])),
-            'bank': gig.get('bank'),
-            'program': gig.get('program')
+            'bank': bank,
+            'program': program,
         })
     return gigs
 
 
 def load_gig(gig_id):
-    data = _load_track_list()
-    gigs = data.get('gigs', [])
+    config = _load_config()
+    gigs = config.get('gigs', [])
     try:
         return gigs[int(gig_id)]
     except (ValueError, IndexError):
         return None
 
 
-def get_chart_path(gig_id, filename):
-    fpath = os.path.join(GIGS_BUILD_DIR, filename)
-    if os.path.isfile(fpath):
-        return fpath
-    return None
+def get_track_paths(gig_id, track_idx):
+    """Return resolved absolute paths for a track's files.
 
+    Returns dict with keys: json_path, txt_path, snapshot_path.
+    Missing files are None.
+    """
+    gig = load_gig(gig_id)
+    if gig is None:
+        return None
+    try:
+        track = gig['tracks'][int(track_idx)]
+    except (KeyError, IndexError, ValueError):
+        return None
 
-def list_charts(gig_id):
-    if not os.path.isdir(GIGS_BUILD_DIR):
-        return []
-    return [f for f in os.listdir(GIGS_BUILD_DIR) if f.endswith(('.html', '.htm'))]
+    snapshot_path = os.path.normpath(os.path.join(MY_DATA_DIR, gig.get('snapshot_path', '')))
+    json_path = _resolve(track.get('json_filename', ''))
+
+    return {
+        'json_path': json_path if os.path.isfile(json_path) else None,
+        'snapshot_path': snapshot_path if os.path.isfile(snapshot_path) else None,
+        'zs3_id': track.get('zs3_id'),
+        'name': track.get('name', ''),
+        'notes': track.get('notes', ''),
+        'input_devices': gig.get('input_devices', []),
+    }

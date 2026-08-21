@@ -9,12 +9,10 @@ function initLiveView(gigId, tracks) {
 }
 
 function selectTrack(gigId, trackIndex) {
-    var track = TRACKS[trackIndex];
-    if (!track || !track.chart) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/select/' + encodeURIComponent(gigId) + '/' + trackIndex, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.onload = function() { window.location.href = '/chart/' + encodeURIComponent(gigId) + '/' + encodeURIComponent(track.chart); };
-    xhr.onerror = function() { window.location.href = '/chart/' + encodeURIComponent(gigId) + '/' + encodeURIComponent(track.chart); };
+    xhr.onload = function() { window.location.href = '/chart/' + encodeURIComponent(gigId) + '/' + trackIndex; };
+    xhr.onerror = function() { window.location.href = '/chart/' + encodeURIComponent(gigId) + '/' + trackIndex; };
     xhr.send(JSON.stringify({}));
 }
