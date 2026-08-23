@@ -260,16 +260,6 @@ def get_zs3_splits_with_devices(zss_data, zs3_id, input_devices):
     return result
 
 
-def list_zs3_ids(zss_data):
-    """Return all ZS3 IDs (except zs3-0) with their titles."""
-    zs3 = zss_data.get('zs3', {})
-    result = []
-    for name in sorted(zs3.keys(), key=lambda x: int(x.split('-')[1])):
-        if name == 'zs3-0':
-            continue
-        title = zs3[name].get('title', '') if isinstance(zs3[name], dict) else ''
-        result.append({'id': name, 'title': title})
-    return result
 
 from keyboard_svg import DEFAULT_COLORS
 
