@@ -296,7 +296,7 @@ def _build_leadsheet_html(sheet, semitones):
             bar = m.get('barLine', 'single')
             if bar in ('start-repeat', 'end-repeat', 'end', 'final', 'double'):
                 parts.append(_barline_html(bar))
-            elif mi < len(measures) - 1:
+            else:
                 parts.append(_barline_html('single'))
 
         parts.append('</div>')  # ls-line
