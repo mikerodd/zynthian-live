@@ -145,6 +145,19 @@ body {
     font-size: 11px; color: #666; font-style: italic;
     margin-bottom: 2px;
 }
+.ls-beat-time {
+    font-family: 'Permanent Marker', cursive;
+    font-size: 11px; color: #666;
+    -webkit-align-self: center; align-self: center;
+    margin-right: 2px; white-space: nowrap;
+    display: -webkit-inline-box; display: -webkit-inline-flex;
+    display: inline-flex;
+    -webkit-flex-direction: column; flex-direction: column;
+    -webkit-align-items: center; align-items: center;
+    line-height: 1;
+}
+.ls-beat-time .num { font-size: 11px; font-weight: 700; }
+.ls-beat-time .bar { width: 10px; height: 1px; background: #666; margin: 1px 0; }
 /* ── keyboard split ── */
 .split-container { text-align: center; margin: 20px 0; line-height: 0; }
 .split-container svg { width: 90%; max-width: 972px; height: auto; display: block; margin: 0 auto; }
@@ -222,6 +235,15 @@ _DOTS = '<div class="ls-bar-dots"><div class="ls-bar-dot"></div><div class="ls-b
 _STROKE = '<div class="ls-bar-stroke"></div>'
 
 
+def _beat_time_html(beat_str):
+    """Render a time signature as a vertical fraction (e.g. 4/4 → 4 over 4)."""
+    parts = beat_str.split('/')
+    if len(parts) == 2:
+        return '<div class="ls-beat-time"><span class="num">{}</span><div class="bar"></div><span class="num">{}</span></div>'.format(
+            html_mod.escape(parts[0]), html_mod.escape(parts[1]))
+    return '<div class="ls-beat-time">{}</div>'.format(html_mod.escape(beat_str))
+
+
 def _barline_html(bar_type):
     """Return HTML for a barline element (pure CSS, no font rendering)."""
     if bar_type == 'start-repeat':
@@ -259,6 +281,9 @@ def _build_leadsheet_html(sheet, semitones):
 
         # Bar line BEFORE the first measure (startBar)
         start_bar = line.get('startBar', '')
+        start_beat = line.get('startBeat', '')
+        if start_beat:
+            parts.append(_beat_time_html(start_beat))
         if start_bar == 'single':
             parts.append(_barline_html('single'))
         elif start_bar:
@@ -292,7 +317,10 @@ def _build_leadsheet_html(sheet, semitones):
             parts.append('</div>')  # ls-beats-row
             parts.append('</div>')  # ls-measure
 
-            # Bar line AFTER the measure (between this and next)
+            # Beat indicator + bar line AFTER the measure
+            bar_beat = m.get('barBeat', '')
+            if bar_beat:
+                parts.append(_beat_time_html(bar_beat))
             bar = m.get('barLine', 'single')
             if bar in ('start-repeat', 'end-repeat', 'end', 'final', 'double'):
                 parts.append(_barline_html(bar))
