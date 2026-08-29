@@ -1,4 +1,3 @@
-/* @font-face { font-family: "MyRealBookFont"; font-style: normal; font-weight: 400; font-display: swap; src: url(/static/fonts/CrazyJazzy.ttf) format('truetype'); } */
 @font-face { font-family: "MyRealBookFont"; font-style: bold; font-weight: 400; font-display: swap; src: url(/static/fonts/MuseJazzText.otf) format('opentype'); }
 
 * {
