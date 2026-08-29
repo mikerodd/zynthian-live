@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-import json
 import logging
 import asyncio
 import tornado.web
@@ -41,9 +40,7 @@ class LiveViewHandler(BaseHandler):
         if gig is None:
             self.send_error(404)
             return
-        tracks_json = json.dumps(gig.get('tracks', []))
-        self.render('live_view.html', gig=gig, gig_id=gig_id,
-                    tracks_json=tracks_json)
+        self.render('live_view.html', gig=gig, gig_id=gig_id)
 
 
 class ChartRenderHandler(BaseHandler):
@@ -52,13 +49,16 @@ class ChartRenderHandler(BaseHandler):
         if paths is None:
             self.send_error(404)
             return
+        zs3_id = paths['zs3_id']
+        if zs3_id:
+            load_zs3(zs3_id)
         semitones = int(self.get_argument('transpose', '0'))
         try:
-            html = render_chart(
+            chart_body = render_chart(
                 gig_id=gig_id,
                 track_json_path=paths['json_path'],
                 zss_path=paths['snapshot_path'],
-                zs3_id=paths['zs3_id'],
+                zs3_id=zs3_id,
                 title=paths['name'],
                 notes=paths['notes'],
                 semitones=semitones,
@@ -68,28 +68,7 @@ class ChartRenderHandler(BaseHandler):
             logging.error("render_chart failed: %s", e)
             self.send_error(500)
             return
-        self.set_header('Content-Type', 'text/html; charset=utf-8')
-        self.write(html)
-
-
-class ApiSelectTrackHandler(BaseHandler):
-    def post(self, gig_id, track_index):
-        gig = load_gig(gig_id)
-        if gig is None:
-            self.write({'error': 'Gig not found'})
-            return
-        try:
-            idx = int(track_index)
-            tracks = gig.get('tracks', [])
-            if idx < 0 or idx >= len(tracks):
-                self.write({'error': 'Invalid track index'})
-                return
-            track = tracks[idx]
-            zs3_id = track.get('zs3_id')
-            success = load_zs3(zs3_id) if zs3_id else True
-            self.write({'success': True, 'zs3_loaded': success})
-        except ValueError:
-            self.write({'error': 'Invalid track index'})
+        self.render('chart.html', title=paths['name'], chart_body=chart_body)
 
 
 class ApiLoadSnapshotHandler(BaseHandler):
@@ -116,7 +95,6 @@ def make_app():
         (r'/$', GigListHandler),
         (r'/gig/([^/]+)$', LiveViewHandler),
         (r'/chart/([^/]+)/(\d+)$', ChartRenderHandler),
-        (r'/api/select/([^/]+)/([^/]+)$', ApiSelectTrackHandler),
         (r'/api/load-snapshot/([^/]+)/([^/]+)$', ApiLoadSnapshotHandler),
         (r'/static/(.*)$', tornado.web.StaticFileHandler, {'path': STATIC_DIR}),
     ], **settings)

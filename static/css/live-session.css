@@ -152,9 +152,10 @@ body {
     border: none;
     border-radius: 8px;
     color: #000;
-    font-family: 'Permanent Marker', cursive;
+    font-family: 'MyRealBookFont', cursive;
     font-size: 18px;
     text-align: left;
+    text-decoration: none;
     cursor: pointer;
     min-height: 60px;
 }
