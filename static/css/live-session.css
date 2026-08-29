@@ -1,4 +1,5 @@
-@font-face { font-family: "Permanent Marker"; font-style: normal; font-weight: 400; font-display: swap; src: url(/static/fonts/PermanentMarker.ttf) format('truetype'); }
+/* @font-face { font-family: "MyRealBookFont"; font-style: normal; font-weight: 400; font-display: swap; src: url(/static/fonts/CrazyJazzy.ttf) format('truetype'); } */
+@font-face { font-family: "MyRealBookFont"; font-style: bold; font-weight: 400; font-display: swap; src: url(/static/fonts/MuseJazzText.otf) format('opentype'); }
 
 * {
     margin: 0;
@@ -12,7 +13,7 @@ html, body {
 }
 
 body {
-    font-family: 'Permanent Marker', cursive;
+    font-family: 'MyRealBookFont', cursive;
     background: #fff;
     color: #000;
     -webkit-touch-callout: none;
@@ -58,7 +59,7 @@ body {
 }
 
 .gig-name {
-    font-size: 20px;
+    font-size: 25px;
     font-weight: 500;
     color: #000;
     margin-bottom: 8px;
@@ -180,4 +181,152 @@ body {
 .track-name {
     flex: 1;
     font-weight: 400;
+}
+
+
+/* ── chart page ── */
+.chart-nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #f0f0f0; padding: 10px 15px;
+    display: -webkit-box; display: -webkit-flex; display: flex;
+    -webkit-align-items: center; align-items: center;
+    border-bottom: 1px solid #ddd;
+}
+.chart-nav a {
+    display: -webkit-inline-box; display: -webkit-inline-flex;
+    display: inline-flex;
+    -webkit-align-items: center; align-items: center;
+    -webkit-justify-content: center; justify-content: center;
+    width: 44px; height: 44px; font-size: 24px; color: #333;
+    text-decoration: none; border-radius: 8px; background: #ddd;
+    -webkit-flex-shrink: 0; flex-shrink: 0;
+}
+.chart-nav a:active { background: #ccc; }
+.chart-nav .nav-title {
+    margin-left: 12px; color: #333; font-size: 16px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chart-nav .nav-notes {
+    margin-left: 12px; color: #888; font-size: 13px;
+    white-space: nowrap;
+}
+.chart-nav .nav-spacer { -webkit-flex: 1; flex: 1; }
+.chart-nav .transpose-btn {
+    display: -webkit-inline-box; display: -webkit-inline-flex;
+    display: inline-flex;
+    -webkit-align-items: center; align-items: center;
+    -webkit-justify-content: center; justify-content: center;
+    width: 44px; height: 44px; font-size: 22px; font-weight: 700;
+    color: #333; text-decoration: none; border-radius: 8px;
+    background: #ddd; border: none; cursor: pointer;
+    margin-left: 6px;
+}
+.chart-nav .transpose-btn:active { background: #ccc; }
+.chart-nav .transpose-val {
+    color: #555; font-size: 14px; min-width: 30px; text-align: center;
+}
+.chart-body {
+    padding: 70px 16px 24px;
+}
+
+.ls-beat sup { font-family: 'MyRealBookFont', cursive; font-size: 0.9em; }
+/* ── leadsheet chords ── */
+.ls-section-label {
+    font-family: 'MyRealBookFont', cursive;
+    font-size: 16px; font-weight: 700; margin: 16px 0 5px;
+    color: #333;
+    display: inline-block;
+    padding: 2px 10px;
+    border: 2px solid #333; border-radius: 10px;
+}
+.ls-line {
+    display: -webkit-box; display: -webkit-flex; display: flex;
+    -webkit-flex-wrap: wrap; flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+.ls-measure {
+    display: -webkit-inline-box; display: -webkit-inline-flex;
+    display: inline-flex;
+    -webkit-flex-direction: column; flex-direction: column;
+    -webkit-align-items: center; align-items: center;
+    border: none;
+    padding: 4px 2px; margin: 2px;
+    min-width: 64px;
+}
+.ls-beats-row {
+    display: -webkit-box; display: -webkit-flex; display: flex;
+    -webkit-flex-direction: row; flex-direction: row;
+    -webkit-align-items: baseline; align-items: baseline;
+    -webkit-justify-content: center; justify-content: center;
+}
+.ls-measure .ls-beat {
+    font-family: 'MyRealBookFont', cursive;
+    font-size: 24px; white-space: nowrap;
+    line-height: 1.3; color: #000;
+    padding: 0 3px;
+}
+.ls-measure .ls-beat.empty { color: transparent; }
+.ls-measure .ls-beat.slash { color: #888; }
+.ls-measure .ls-beat.lazy {
+    color: #000; font-size: 18px; font-weight: 700;
+    align-self: center;
+    -webkit-box-pack: center; -webkit-justify-content: center;
+    justify-content: center;
+}
+.ls-barline {
+    display: -webkit-inline-box; display: -webkit-inline-flex;
+    display: inline-flex;
+    -webkit-align-items: center; align-items: center;
+    -webkit-justify-content: center; justify-content: center;
+    min-width: 12px;
+    -webkit-align-self: stretch; align-self: stretch;
+}
+.ls-bar-stroke {
+    width: 2px; background: #000;
+    -webkit-align-self: stretch; align-self: stretch;
+}
+.ls-bar-dots {
+    display: -webkit-inline-flex; display: inline-flex;
+    -webkit-flex-direction: column; flex-direction: column;
+    -webkit-align-items: center; align-items: center;
+    gap: 3px; margin: 0 1px;
+}
+.ls-bar-dot {
+    width: 4px; height: 4px; background: #000; border-radius: 50%;
+}
+.ls-volta {
+    font-size: 11px; color: #666; font-style: italic;
+    margin-bottom: 2px;
+}
+.ls-beat-time {
+    font-family: 'MyRealBookFont', cursive;
+    font-size: 11px; color: #666;
+    -webkit-align-self: center; align-self: center;
+    margin-right: 2px; white-space: nowrap;
+    display: -webkit-inline-box; display: -webkit-inline-flex;
+    display: inline-flex;
+    -webkit-flex-direction: column; flex-direction: column;
+    -webkit-align-items: center; align-items: center;
+    line-height: 1;
+}
+.ls-beat-time .num { font-size: 11px; font-weight: 700; }
+.ls-beat-time .bar { width: 10px; height: 1px; background: #666; margin: 1px 0; }
+/* ── keyboard split ── */
+.split-container { text-align: center; margin: 20px 0; line-height: 0; }
+.split-container svg { width: 90%; max-width: 972px; height: auto; display: block; margin: 0 auto; }
+/* ── track table ── */
+.track-table {
+    margin: 16px auto; border-collapse: collapse;
+}
+.track-table th {
+    border: 1px solid #000; padding: 4px 8px;
+    font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.track-table td {
+    border: 1px solid #000; padding: 2px 8px;
+    text-align: center; font-size: 12px; font-weight: 700;
+    min-width: 32px;
+}
+.track-table .cell-text {
+    font-weight: 700; font-size: 11px; color: #000;
 }
