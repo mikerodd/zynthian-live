@@ -8,18 +8,11 @@
     </div>
     <div class="track-list" id="track-list">
         {% for i, track in enumerate(gig.get('tracks', [])) %}
-        <button class="track-btn" data-index="{{ i }}">
+        <a class="track-btn" href="/chart/{{ gig_id }}/{{ i }}">
             <span class="track-number">{{ i + 1 }}</span>
             <span class="track-name">{{ track.get('name', 'Track ' + str(i + 1)) }}</span>
-        </button>
+        </a>
         {% end %}
     </div>
 </div>
-{% end %}
-{% block script %}
-<script>
-    var GIG_ID = "{{ gig_id }}";
-    var TRACKS = {% raw tracks_json %};
-    initLiveView(GIG_ID, TRACKS);
-</script>
 {% end %}
