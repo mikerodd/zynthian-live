@@ -1,0 +1,3 @@
+tornado>=6.0
+# OSC support (loads ZS3 sub-snapshots on the Zynthian box). Optional:
+#   pip install pyliblo3

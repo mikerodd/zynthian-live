@@ -15,8 +15,25 @@ zynthian-live/
 ├── static/              — CSS and JS
 ├── live_session_server.py  — Tornado web server
 ├── live_session.sh      — startup script
+├── requirements.txt     — Python dependencies (tornado)
 └── install.sh           — deploy server code to Zynthian
 ```
+
+## Desktop setup (dev / test)
+
+```bash
+python3 -m venv venv
+./venv/bin/pip install -r requirements.txt
+```
+
+Run against the bundled test data:
+
+```bash
+ZYNTHIAN_MY_DATA_DIR=/path/to/zynthian-live/test ./venv/bin/python live_session_server.py
+```
+
+Then open `http://<desktop-ip>:8080`. Only `tornado` is required to serve
+pages; `pyliblo3` (OSC) is optional and enables ZS3/snapshot loading.
 
 ## Data flow
 
@@ -34,12 +51,25 @@ zynthian-live server (reads from my-data, serves to browser)
 ./install.sh
 ```
 
+Installs everything in one go over a single SSH connection (so the password is
+asked only once):
+- the server code to `/zynthian/zynthian-live`
+- the systemd unit `/etc/systemd/system/zynthian-live.service` (placeholders substituted)
+- runs `systemctl daemon-reload` and enables the service
+
+Then start it with `ssh root@zynthian.local 'systemctl start zynthian-live'`.
+
 ## Usage (on Zynthian — live)
 
 - The server reads `config.json` from `/zynthian/zynthian-my-data/live-session/`, not from this repo
 - Connect your tablet/phone or computer to Zynthian WiFi AP, then open `http://<address>:8080`.
-- Tap a track to load its ZS3 sub-snapshot and view the chart
+- Tap a track: the server loads its ZS3 sub-snapshot then shows the chart, in a single request
 - The chart shows: chord grid → keyboard split → track structure table
+
+> **Important:** snapshot loading relies on MIDI bank/program change on the
+> Zynthian **Master Channel**. This is not set by default on a clean install.
+> Configure it in Zynthian webconf (Settings → MIDI → Master Channel) or bank/
+> program changes will be silently ignored.
 
 
 ## Dependencies
