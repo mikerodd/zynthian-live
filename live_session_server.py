@@ -109,6 +109,9 @@ async def amain():
     port = int(os.environ.get('LIVE_SESSION_PORT', 8080))
     app.listen(port, address='0.0.0.0')
     logging.info("Live Session server started on port {}".format(port))
+    logging.info("REMINDER: check that the MIDI Master Channel is configured in Zynthian "
+                 "webconf (Settings -> MIDI -> Master Channel). Snapshot loading via bank/"
+                 "program change only works if it is set.")
     await asyncio.Event().wait()
 
 
