@@ -176,6 +176,14 @@ def _build_leadsheet_html(sheet, semitones):
     return '\n'.join(parts)
 
 
+def _build_html_block(track_data):
+    """Return the raw HTML of the optional 'html' display block ('' if none)."""
+    block = track_data.get('html')
+    if isinstance(block, dict):
+        return block.get('text', '')
+    return ''
+
+
 def _build_track_table_html(track_data):
     """Render the track structure table (section headers + bank rows)."""
     headers = track_data.get('headers', [])
@@ -208,7 +216,7 @@ def _build_track_table_html(track_data):
 
 
 def _build_page(title, notes, gig_id, semitones, display,
-                leadsheet_html, keyboard_svg, table_html):
+                leadsheet_html, keyboard_svg, table_html, html_block=''):
     """Assemble the chart page body (nav bar + sections)."""
     transpose_label = '{:+d}'.format(semitones) if semitones else '0'
     back_url = '/gig/{}'.format(html_mod.escape(str(gig_id)))
@@ -249,6 +257,10 @@ def _build_page(title, notes, gig_id, semitones, display,
             body_parts.append('</div>')
         elif block == 'structure' and table_html:
             body_parts.append(table_html)
+        elif block == 'html' and html_block:
+            body_parts.append('<div class="html-block">')
+            body_parts.append(html_block)
+            body_parts.append('</div>')
     body_parts.append('</div>')
 
     return '\n'.join(body_parts)
@@ -333,4 +345,5 @@ def render_chart(gig_id, track_json_path,
         leadsheet_html=leadsheet_html,
         keyboard_svg=keyboard_svg,
         table_html=table_html,
+        html_block=_build_html_block(track_data),
     )
