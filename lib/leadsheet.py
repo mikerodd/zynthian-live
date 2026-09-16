@@ -30,6 +30,7 @@ NOTE_VALUES = {
 BAR_SYMBOLS = {
     '|': 'single', '||': 'double', '|||': 'final',
     '>|': 'end', '}': 'end', '|<': 'start-repeat',
+    '>|<': 'end-start-repeat',
 }
 
 _PAT_CHORD = re.compile(r'^([A-G][#b]?)(.*)')
@@ -106,7 +107,7 @@ def _parse_chord_line(chords_str, voltas_str='', beat_str=''):
         'measures': [],
     }
     if chords_str:
-        parts = re.split(r'\s*(\|\|\||\|\||\|<|>\||\||\})\s*', chords_str)
+        parts = re.split(r'\s*(>\|<|\|\|\||\|\||\|<|>\||\||\})\s*', chords_str)
         parts = [p for p in parts if p.strip()]
         if parts:
             first = parts[0]

@@ -90,6 +90,8 @@ def _beat_time_html(beat_str):
 
 def _barline_html(bar_type):
     """Return HTML for a barline element (pure CSS, no font rendering)."""
+    if bar_type == 'end-start-repeat':
+        return '<div class="ls-barline">{}{}{}{}</div>'.format(_DOTS, _STROKE, _STROKE, _DOTS)
     if bar_type == 'start-repeat':
         return '<div class="ls-barline">{}{}</div>'.format(_STROKE, _DOTS)
     if bar_type in ('end-repeat', 'end'):
@@ -166,7 +168,7 @@ def _build_leadsheet_html(sheet, semitones):
             if bar_beat:
                 parts.append(_beat_time_html(bar_beat))
             bar = m.get('barLine', 'single')
-            if bar in ('start-repeat', 'end-repeat', 'end', 'final', 'double'):
+            if bar in ('start-repeat', 'end-repeat', 'end', 'final', 'double', 'end-start-repeat'):
                 parts.append(_barline_html(bar))
             else:
                 parts.append(_barline_html('single'))
