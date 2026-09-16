@@ -32,13 +32,15 @@ BLACK_TO_LEFT_WHITE = {
 
 BLACK_KEY_POSITIONS = [0, 1, 3, 4, 5]
 
-# Default colors for up to 6 zones (RGB floats 0..1)
+# Default colors for up to 6 zones (RGB floats 0..1).
+# Shared with the track structure table so zone k (keyboard, left-to-right)
+# always has the same color as row k (structure, top-to-bottom).
 DEFAULT_COLORS = [
     [1.0, 0.0, 0.0],   # red
     [0.0, 1.0, 0.0],   # green
     [0.0, 0.0, 1.0],   # blue
     [1.0, 0.0, 1.0],   # magenta
-    [1.0, 1.0, 0.0],   # yellow
+    [1.0, 0.6, 0.0],   # amber (was a too-bright yellow)
     [0.0, 1.0, 1.0],   # cyan
 ]
 
@@ -60,6 +62,20 @@ def _note_to_white_index(note_str, keyb_begin):
         white_idx = WHITE_NOTE_INDEX[left_white]
         return (octave - keyb_begin) * 7 + white_idx, True
     return -1, False
+
+
+def _clamp_split_indices(split_indices, num_white_keys):
+    """Clamp split boundaries into the drawn keyboard range.
+
+    A boundary below the left edge would otherwise erase the first zone (its
+    color would never be drawn), and a boundary above the right edge would
+    erase the last one.  Clamping both to the first/last key guarantees that
+    the keyboard's colors run in the same order, left to right, as the track
+    structure table does top to bottom.
+    """
+    lo = 1
+    hi = max(1, num_white_keys - 1)
+    return [(min(max(idx, lo), hi), black) for idx, black in split_indices]
 
 
 def _color_white(white_idx, split_indices, hex_colors):
@@ -99,7 +115,9 @@ def _render_keyboard_inner(keyb_begin, splits, split_colors,
     num_octaves_display = (num_white_keys + 6) // 7
 
     hex_colors = [rgb_to_hex(c) for c in split_colors]
-    split_indices = [_note_to_white_index(s, keyb_begin) for s in splits]
+    split_indices = _clamp_split_indices(
+        [_note_to_white_index(s, keyb_begin) for s in splits],
+        num_white_keys)
 
     lines = []
 
