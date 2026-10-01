@@ -19,8 +19,7 @@ from zss_parser import (
     parse_zss, get_zs3_splits_with_devices, splits_for_device, trim_label,
 )
 from keyboard_svg import (
-    generate_keyboard_svg, generate_multi_keyboard_svg, rgb_to_hex,
-    DEFAULT_COLORS,
+    split_svg, rgb_to_hex, DEFAULT_COLORS,
 )
 
 DATA_DIR = os.environ.get(
@@ -437,10 +436,7 @@ def render_chart(gig_id, track_json_path,
                 sd['banks'] = [trim_label(b) for b in sd['banks']]
                 skins.append(sd)
                 color_offset += len(chan_zones)
-            if len(skins) == 1:
-                keyboard_svg = generate_keyboard_svg(**skins[0])
-            else:
-                keyboard_svg = generate_multi_keyboard_svg(skins)
+            keyboard_svg = split_svg(skins)
 
     # Track structure table
     structure = track_data.get('structure', {})
