@@ -36,6 +36,8 @@ sys.path.insert(0, str(ROOT / 'lib'))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import track_renderer  # noqa: E402
+from keyboard_svg import split_svg  # noqa: E402
+from zss_parser import collect_skins  # noqa: E402
 from fixtures import (  # noqa: E402
     DataRootMixin, INPUT_DEVICES, ZSS_FIXTURE, ZSS3_ID, have_zss,
     import_gigs_to_pdf,
@@ -239,8 +241,7 @@ class SplitBlockTests(unittest.TestCase):
             self.skipTest('scripts/gigs_to_pdf.py not found')
 
     def skins(self):
-        return self.pdf.collect_skins(
-            {}, str(ZSS_FIXTURE), ZSS3_ID, INPUT_DEVICES)
+        return collect_skins({}, str(ZSS_FIXTURE), ZSS3_ID, INPUT_DEVICES)
 
     def test_collect_skins_yields_one_skin_per_channel(self):
         skins = self.skins()
@@ -249,25 +250,25 @@ class SplitBlockTests(unittest.TestCase):
         self.assertEqual(1, len(skins[1]['banks']))
 
     def test_split_svg_is_a_multi_keyboard_group_per_device(self):
-        svg = self.pdf.split_svg(self.skins())
+        svg = split_svg(self.skins())
         self.assertIn('<svg', svg)
         self.assertEqual(2, svg.count('<g transform='))
 
     def test_single_device_uses_plain_keyboard(self):
-        svg = self.pdf.split_svg(self.skins()[:1])
+        svg = split_svg(self.skins()[:1])
         self.assertNotIn('<g transform=', svg)
         self.assertIn('<svg', svg)
 
     def test_missing_snapshot_yields_no_skins(self):
         self.assertEqual(
-            [], self.pdf.collect_skins({}, '/nonexistent.zss', ZSS3_ID,
-                                       INPUT_DEVICES))
+            [], collect_skins({}, '/nonexistent.zss', ZSS3_ID,
+                              INPUT_DEVICES))
 
     def test_collect_skins_requires_all_arguments(self):
         path = str(ZSS_FIXTURE)
         self.assertEqual(
-            [], self.pdf.collect_skins({}, path, None, INPUT_DEVICES))
-        self.assertEqual([], self.pdf.collect_skins({}, path, ZSS3_ID, []))
+            [], collect_skins({}, path, None, INPUT_DEVICES))
+        self.assertEqual([], collect_skins({}, path, ZSS3_ID, []))
 
     def test_track_renderer_renders_split_from_zss(self):
         html = track_renderer.render_chart(

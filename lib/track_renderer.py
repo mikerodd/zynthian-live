@@ -15,9 +15,7 @@ import os
 from urllib.parse import urlsplit
 
 from leadsheet import parse_leadsheet, transpose_sheet
-from zss_parser import (
-    parse_zss, get_zs3_splits_with_devices, splits_for_device, trim_label,
-)
+from zss_parser import collect_skins
 from keyboard_svg import (
     split_svg, rgb_to_hex, DEFAULT_COLORS,
 )
@@ -321,9 +319,7 @@ def _build_track_table_html(track_data):
     return '\n'.join(parts)
 
 
-def _build_page(title, notes, gig_id, semitones, display,
-                leadsheet_html, keyboard_svg, table_html, html_block='',
-                images_html=''):
+def _build_page(title, notes, gig_id, semitones, blocks):
     """Assemble the chart page body (nav bar + sections)."""
     transpose_label = '{:+d}'.format(semitones) if semitones else '0'
     back_url = '/gig/{}'.format(html_mod.escape(str(gig_id)))
@@ -355,21 +351,17 @@ def _build_page(title, notes, gig_id, semitones, display,
 
     # Chart body
     body_parts.append('<div class="chart-body">')
-    for block in display:
-        if block == 'leadsheet' and leadsheet_html:
-            body_parts.append(leadsheet_html)
-        elif block == 'split' and keyboard_svg:
+    for name, html in blocks:
+        if name == 'split':
             body_parts.append('<div class="split-container">')
-            body_parts.append(keyboard_svg)
+            body_parts.append(html)
             body_parts.append('</div>')
-        elif block == 'structure' and table_html:
-            body_parts.append(table_html)
-        elif block == 'html' and html_block:
+        elif name == 'html':
             body_parts.append('<div class="html-block">')
-            body_parts.append(html_block)
+            body_parts.append(html)
             body_parts.append('</div>')
-        elif block == 'images' and images_html:
-            body_parts.append(images_html)
+        else:
+            body_parts.append(html)
     body_parts.append('</div>')
 
     return '\n'.join(body_parts)
@@ -408,53 +400,67 @@ def render_chart(gig_id, track_json_path,
     if not title:
         title = track_data.get('title', 'Untitled')
 
-    display = track_data.get('display', ['leadsheet', 'split', 'structure'])
-    time_sig = track_data.get('time', '4/4')
-
-    # Leadsheet
-    leadsheet_html = ''
-    leadsheet_data = track_data.get('leadsheet', [])
-    if leadsheet_data:
-        sheet = parse_leadsheet(leadsheet_data, time_sig)
-        leadsheet_html = _build_leadsheet_html(sheet, semitones)
-
-    # Keyboard split from ZSS
-    keyboard_svg = ''
-    if zss_path and zs3_id and input_devices and os.path.isfile(zss_path):
-        zss = parse_zss(zss_path)
-        zones = get_zs3_splits_with_devices(zss, zs3_id, input_devices)
-        if zones:
-            skins = []
-            color_offset = 0
-            for dev in input_devices:
-                chan = dev['midi_chan']
-                chan_zones = [z for z in zones if z['midi_chan'] == chan]
-                if not chan_zones:
-                    continue
-                sd = splits_for_device(dev, chan_zones,
-                                       global_color_offset=color_offset)
-                sd['banks'] = [trim_label(b) for b in sd['banks']]
-                skins.append(sd)
-                color_offset += len(chan_zones)
-            keyboard_svg = split_svg(skins)
-
-    # Track structure table
-    structure = track_data.get('structure', {})
-    table_html = _build_track_table_html(structure)
-
-    images_html = ''
-    if isinstance(display, list) and 'images' in display:
-        images_html = build_images_html(track_data, track_json_path)
+    blocks = build_display_blocks(
+        track_data, track_json_path,
+        semitones=semitones, zss_path=zss_path, zs3_id=zs3_id,
+        input_devices=input_devices)
 
     return _build_page(
         title=title,
         notes=notes,
         gig_id=gig_id,
         semitones=semitones,
-        display=display,
-        leadsheet_html=leadsheet_html,
-        keyboard_svg=keyboard_svg,
-        table_html=table_html,
-        html_block=_build_html_block(track_data),
-        images_html=images_html,
+        blocks=blocks,
     )
+
+
+def build_display_blocks(track_data, track_json_path, semitones=0,
+                         zss_path=None, zs3_id=None, input_devices=None):
+    """Render the selected display blocks as a list of ``(name, html)`` pairs.
+
+    Returns one entry per block named in ``track_data['display']`` that has
+    content, in display order.  Blocks that were not selected, are unknown,
+    or render to nothing are omitted entirely, so a consumer never has to
+    special-case an empty block.
+
+    The HTML is deliberately *unwrapped*: the surrounding markup differs per
+    consumer (the server wraps ``split`` and ``html`` in divs of its own,
+    the PDF exporter adds its sheet-level decorations), so decoration stays
+    with the caller and only the per-block rendering is shared.
+
+    Parameters
+    ----------
+    track_data : dict
+        Parsed track JSON (display, leadsheet, structure, html, images).
+    track_json_path : str
+        Path the track was loaded from; images resolve relative to it.
+    semitones : int
+        Transposition applied to the leadsheet.
+    zss_path, zs3_id, input_devices
+        Snapshot and device config for the ``split`` block; see
+        zss_parser.collect_skins().
+    """
+    display = track_data.get('display', ['leadsheet', 'split', 'structure'])
+    time_sig = track_data.get('time', '4/4')
+
+    blocks = []
+    for name in display:
+        if name == 'leadsheet':
+            leadsheet_data = track_data.get('leadsheet', [])
+            html = (_build_leadsheet_html(
+                        parse_leadsheet(leadsheet_data, time_sig), semitones)
+                    if leadsheet_data else '')
+        elif name == 'split':
+            skins = collect_skins(track_data, zss_path, zs3_id, input_devices)
+            html = split_svg(skins) if skins else ''
+        elif name == 'structure':
+            html = _build_track_table_html(track_data.get('structure', {}))
+        elif name == 'html':
+            html = _build_html_block(track_data)
+        elif name == 'images':
+            html = build_images_html(track_data, track_json_path)
+        else:
+            continue
+        if html:
+            blocks.append((name, html))
+    return blocks
