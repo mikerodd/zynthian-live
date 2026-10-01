@@ -107,17 +107,14 @@ class ImageRenderingTests(unittest.TestCase):
 
         self.assertEqual('', html)
 
-    def test_build_page_follows_images_display_order(self):
+    def test_build_page_follows_blocks_display_order(self):
         html = track_renderer._build_page(
             title='Track',
             notes='',
             gig_id=0,
             semitones=0,
-            display=['images', 'structure'],
-            leadsheet_html='',
-            keyboard_svg='',
-            table_html='<table id="structure"></table>',
-            images_html='<div id="images"></div>',
+            blocks=[('images', '<div id="images"></div>'),
+                    ('structure', '<table id="structure"></table>')],
         )
 
         self.assertLess(html.index('id="images"'), html.index('id="structure"'))
