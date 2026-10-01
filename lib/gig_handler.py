@@ -3,6 +3,7 @@
 
 Config format (v2):
 {
+  "includes": ["config-the-spokes.json"],
   "gigs": [
     {
       "name": "Gig Name",
@@ -20,10 +21,14 @@ Config format (v2):
     }
   ]
 }
+
+The optional top-level "includes" names sibling config files whose gigs are
+appended after this file's own; see lib/config_loader.py.
 """
 import os
-import json
 import logging
+
+from config_loader import load_config
 
 MY_DATA_DIR = os.environ.get(
     'ZYNTHIAN_MY_DATA_DIR',
@@ -33,10 +38,7 @@ CONFIG_PATH = os.path.join(MY_DATA_DIR, 'live-session', 'config.json')
 
 
 def _load_config():
-    if not os.path.isfile(CONFIG_PATH):
-        return {'gigs': []}
-    with open(CONFIG_PATH, 'r') as f:
-        return json.load(f)
+    return load_config(CONFIG_PATH)
 
 
 def _base_dir():
