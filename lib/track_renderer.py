@@ -15,6 +15,7 @@ import os
 from urllib.parse import urlsplit
 
 from leadsheet import parse_leadsheet, transpose_sheet
+from track_loader import load_track
 from zss_parser import collect_skins
 from keyboard_svg import (
     split_svg, rgb_to_hex, DEFAULT_COLORS,
@@ -395,8 +396,7 @@ def render_chart(gig_id, track_json_path,
         List of input device dicts with 'midi_chan', 'keys', 'begins'.
     """
     # Load track data
-    with open(track_json_path, 'r', encoding='utf-8') as f:
-        track_data = json.load(f)
+    track_data = load_track(track_json_path)
     if not title:
         title = track_data.get('title', 'Untitled')
 
