@@ -314,6 +314,20 @@ body {
 /* ── keyboard split ── */
 .split-container { text-align: center; margin: 20px 0; line-height: 0; }
 .split-container svg { width: 90%; max-width: 972px; height: auto; display: block; margin: 0 auto; }
+.track-images { margin: 16px 0; text-align: left; }
+.track-image {
+    display: -webkit-flex; display: flex;
+    -webkit-align-items: center; align-items: center;
+    margin: 8px 0; break-inside: avoid; page-break-inside: avoid;
+}
+.track-image-caption {
+    -webkit-flex: 0 0 auto; flex: 0 0 auto;
+    min-width: 72px; padding-right: 16px; text-align: right;
+    font-weight: 700;
+}
+.track-image img {
+    display: block; max-width: 100%; min-width: 0; height: auto; margin: 0;
+}
 /* ── raw HTML block ── */
 .html-block { margin: 16px 0; }
 /* ── track table ── */
