@@ -31,7 +31,7 @@ CTRL_MASTER="ssh -o ControlMaster=yes -o ControlPath=$SOCK -o ControlPersist=60"
 CTRL_SLAVE="ssh -o ControlPath=$SOCK"
 
 echo "Connecting to root@${HOST} (asked for password once)..."
-$CTRL_MASTER "$HOST" true
+$CTRL_MASTER "root@$HOST" true
 
 cleanup() {
     $CTRL_SLAVE -O exit "$HOST" 2>/dev/null || true
