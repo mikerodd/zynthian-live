@@ -237,3 +237,14 @@ def generate_multi_keyboard_svg(device_skins):
 
     lines.append('</svg>')
     return '\n'.join(lines)
+
+
+def split_svg(skins):
+    """Render the keyboards described by ``skins`` into a single SVG.
+
+    ``skins`` is what zss_parser.collect_skins() returns: one entry per
+    input channel, or an empty list when the snapshot yielded no zones
+    (which renders as an empty string).  A single skin is drawn as a plain
+    keyboard, several are laid out side by side.
+    """
+    return generate_multi_keyboard_svg(skins)
