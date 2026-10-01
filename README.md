@@ -58,6 +58,56 @@ overridden with `ZYNTHIAN_MY_DATA_DIR`. The gig list and track list use
 generate their HTML, SVG, and section order at request time. Keyboard split
 data is also read from the `.zss` snapshot selected by the gig.
 
+## Track inheritance
+
+Songs that share a verse, chorus, or structure can inherit it instead of
+copying it. Add a top-level `inherit` key to a track JSON naming the file to
+inherit from, inside the same directory:
+
+```json
+{
+  "inherit": "verse.json",
+  "display": ["leadsheet", "structure"]
+}
+```
+
+The parent's keys are taken and the child's replace them one by one, so a
+short child inherits everything it does not mention and states only what
+differs:
+
+```json
+// verse.json
+{
+  "display": ["leadsheet", "split", "structure"],
+  "leadsheet": [ ... ],
+  "structure": { "headers": [...], "rows": [...] }
+}
+
+// chorus.json
+{
+  "inherit": "verse.json",
+  "display": ["leadsheet", "structure"]
+}
+```
+
+Points worth knowing:
+
+- The merge is **shallow**: a top-level key is replaced wholesale, so a child
+  that defines its own `structure` gets exactly that table, not a blend.
+- Only **one level** is followed. A parent that itself has `inherit`
+  contributes its own content; its own parent is not loaded, so a cycle of
+  tracks cannot loop.
+- `inherit` is removed from the merged result and never reaches the renderer.
+- A parent that is missing, unreadable, invalid, or outside the child's own
+  directory only logs a warning — the track still renders on its own. A
+  problem with the child itself is still an error, as before.
+- The parent file is addressed relative to the child, but must stay in that
+  same directory or a subdirectory of it. Absolute paths, URLs, and `..` are
+  refused, so a track file cannot pull in JSON from elsewhere on the device.
+
+Inheritance is applied by both the web server and the PDF exporter, so a
+track renders identically in both.
+
 ## Images
 
 Add `images` to the track's `display` list and provide image entries with source
