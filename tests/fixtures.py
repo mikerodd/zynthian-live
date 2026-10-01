@@ -56,7 +56,7 @@ class DataRootMixin:
     """Creates a temporary data root on behalf of a TestCase."""
 
     def make_data_root(self, tracks=None, gigs=None, input_devices=None,
-                       snapshot=True):
+                       snapshot=True, includes=None):
         """Populate and return a fresh temporary data root.
 
         Parameters
@@ -72,6 +72,10 @@ class DataRootMixin:
         snapshot : bool
             Symlink the .zss fixture into place.  Skipped automatically
             when the fixture is unavailable.
+        includes : dict or None
+            Maps a sibling config file name to either a list of gig
+            definitions or a whole config dict.  Each is written next to
+            config.json and named in config.json's top-level ``includes``.
         """
         temp_dir = tempfile.TemporaryDirectory()
         self.addCleanup(temp_dir.cleanup)
@@ -101,9 +105,22 @@ class DataRootMixin:
         else:
             gigs = [self.with_devices(gig, input_devices) for gig in gigs]
 
+        include_names = []
+        for name, content in (includes or {}).items():
+            if isinstance(content, dict):
+                payload = content
+            else:
+                payload = {'gigs': [
+                    self.with_devices(gig, input_devices) for gig in content]}
+            (root / 'live-session' / name).write_text(
+                json.dumps(payload), encoding='utf-8')
+            include_names.append(name)
+
+        config = {'gigs': gigs}
+        if include_names:
+            config['includes'] = include_names
         config_path = root / 'live-session' / 'config.json'
-        config_path.write_text(
-            json.dumps({'gigs': gigs}), encoding='utf-8')
+        config_path.write_text(json.dumps(config), encoding='utf-8')
         return root
 
     def default_gig(self, filenames, name='Test Gig', zs3_id=ZSS3_ID,

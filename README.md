@@ -10,6 +10,7 @@ Pages are generated dynamically for each request. The server reads `config.json`
 zynthian-live/
 ├── lib/
 │   ├── gig_handler.py     — reads config.json and track metadata from my-data
+│   ├── config_loader.py   — merges the configs named by "includes"
 │   ├── track_renderer.py  — converts track JSON into chart HTML and SVG
 │   └── zs3_handler.py     — OSC bridge to load ZS3 sub-snapshots
 ├── templates/             — Tornado HTML templates
@@ -42,6 +43,7 @@ pages; `pyliblo3` (OSC) is optional and enables ZS3/snapshot loading.
 $ZYNTHIAN_MY_DATA_DIR/
 ├── live-session/
 │   ├── config.json       — gig and track definitions
+│   ├── config-*.json     — optional per-gig configs named by its "includes"
 │   └── tracks/
 │       ├── *.json        — chart data referenced by each track
 │       └── imgs/*        — optional images referenced by track JSON
@@ -107,6 +109,51 @@ Points worth knowing:
 
 Inheritance is applied by both the web server and the PDF exporter, so a
 track renders identically in both.
+
+## Config includes
+
+A gig that gets its own set list — one you also print a PDF from — can live
+in its own config file instead of being copied into `config.json`. Name it in
+a top-level `includes` key:
+
+```json
+{
+  "includes": ["config-the-spokes.json", "config-tribute-rolling-stones.json"],
+  "gigs": [
+    { "name": "All tracks", "tracks": [ ... ] },
+    { "name": "RSPro", "tracks": [ ... ] }
+  ]
+}
+```
+
+Each included file is an ordinary config with its own `gigs` array, and its
+gigs are appended after the including file's own, in the order listed.
+
+Points worth knowing:
+
+- `includes` sits **beside** `gigs`, not inside it, so the gig array stays a
+  plain list of gigs — nothing has to tell a real gig apart from a directive.
+- The order of the list is the order of the gigs. This matters: gig ids are
+  positional (`gigs[0]` is id `0`), so a reorder renumbers them.
+- Only **one level** is followed. An included file that has an `includes` key
+  of its own logs a warning and contributes its own gigs, so a cycle of
+  configs cannot loop.
+- Include paths are resolved against the **including** config's directory and
+  must stay inside it. Absolute paths, URLs, and `..` are refused, so a config
+  cannot pull in JSON from elsewhere on the device.
+- A missing or malformed **include** is an error, not a warning: quietly
+  dropping gigs would leave a performer with a set list that lost songs. A
+  missing root `config.json` is still reported as an empty config, so a device
+  with no data mounted keeps serving.
+- `json_filename` keeps meaning what it did in the file that declared it, so
+  the same gig renders identically whether reached through `config.json` or
+  through its own file.
+
+Both the web server and the PDF exporter go through the same loader, so
+`gigs_to_pdf.py --config config-the-spokes.json` prints just that gig while
+the server serves the merged list. Because `includes` lives in the file, the
+deploy step must ship the included files too — `zynthian-live-data/install.sh`
+copies `config.json` and every `config-*.json` next to it.
 
 ## Images
 
