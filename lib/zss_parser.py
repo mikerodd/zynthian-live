@@ -6,6 +6,7 @@ per active chain together with the preset (instrument) name.
 """
 
 import json
+import os
 
 # ── MIDI note helpers ──────────────────────────────────────────────────
 
@@ -298,3 +299,35 @@ def splits_for_device(device, zones, global_color_offset=0):
         'keyb_begin': keyb_begin_octave,
         'num_white_keys': num_white,
     }
+
+
+def collect_skins(track_data, zss_path, zs3_id, input_devices):
+    """Return one keyboard_svg parameter set per channel that has zones.
+
+    ``track_data`` is accepted so callers can pass the parsed track JSON
+    verbatim; the split geometry comes entirely from the snapshot and the
+    gig's ``input_devices``, so it is unused here.
+
+    Returns an empty list -- never raises -- when any of the inputs needed
+    for a split is missing (no snapshot path, no zs3_id, no input devices,
+    unreadable snapshot, or a ZS3 id that is not in the snapshot), so a
+    ``split`` display block simply renders nothing.
+    """
+    if not (zss_path and zs3_id and input_devices and os.path.isfile(zss_path)):
+        return []
+    zss = parse_zss(zss_path)
+    zones = get_zs3_splits_with_devices(zss, zs3_id, input_devices)
+    if not zones:
+        return []
+    skins = []
+    color_offset = 0
+    for dev in input_devices:
+        chan = dev['midi_chan']
+        chan_zones = [z for z in zones if z['midi_chan'] == chan]
+        if not chan_zones:
+            continue
+        sd = splits_for_device(dev, chan_zones, global_color_offset=color_offset)
+        sd['banks'] = [trim_label(b) for b in sd['banks']]
+        skins.append(sd)
+        color_offset += len(chan_zones)
+    return skins
