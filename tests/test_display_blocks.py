@@ -7,9 +7,17 @@ These pin the exact HTML produced by the two consumers of lib/:
   * the PDF exporter     -- gigs_to_pdf.build_html()
 
 Purpose: the display-block loop was duplicated between them and had already
-drifted.  A refactor that mutualises the code must not change a single byte
-of either output, and these hashes are what prove that.  They are recorded
-from the *unrefactored* code.
+drifted -- the PDF gated the structure block on ``rows`` being present and
+so emitted a blank line where the server emitted nothing when ``headers``
+was missing.  A refactor that mutualises the code must not change a single
+byte of either output, and these hashes are what prove that.  They are
+recorded from the *unrefactored* code.
+
+The two pipelines still differ where they are supposed to: the server
+wraps ``split`` and ``html`` in divs of its own, the PDF exporter adds a
+sheet-leadsheet-divider and an inline split-container.  That markup belongs
+to each consumer, which is why track_renderer.build_display_blocks() hands
+back unwrapped block HTML.
 
 Regenerate after an intentional change::
 
