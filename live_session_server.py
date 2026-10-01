@@ -6,6 +6,7 @@ import logging
 import asyncio
 import tornado.web
 import tornado.ioloop
+from tornado.escape import escape
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from zs3_handler import init_osc, load_snapshot, load_zs3
@@ -64,6 +65,20 @@ class ChartRenderHandler(BaseHandler):
                 semitones=semitones,
                 input_devices=paths['input_devices'],
             )
+        except ValueError as e:
+            # includes json.JSONDecodeError: a malformed track file, which
+            # says exactly where it went wrong, so pass it on rather than
+            # making the user hunt through the journal
+            name = os.path.basename(paths['json_path'] or '')
+            logging.error('invalid JSON in track %s: %s', name, e)
+            self.set_status(500)
+            self.finish(
+                '<!doctype html><meta charset="utf-8">'
+                '<title>Invalid track JSON</title>'
+                '<h1>Invalid JSON in {}</h1><p>{}</p>'
+                '<p>The file must be valid JSON; check the position above.</p>'
+                .format(escape(name), escape(str(e))))
+            return
         except Exception as e:
             logging.error("render_chart failed: %s", e)
             self.send_error(500)
