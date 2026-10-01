@@ -238,6 +238,24 @@ class PdfPipelineGoldenTests(GoldenTestCase):
         self.assertEqual('Test Gig', cover)
         self.assertGolden('pdf_alpha_index', doc)
 
+    def test_unreferenced_track_files_are_reported(self):
+        gig = {'name': 'G', 'tracks': [
+            {'name': 'Used', 'json_filename': 'tracks/used.json'}]}
+        root = self.make_data_root(
+            tracks={'used.json': {'display': []},
+                    'parked.json': '{"display": [',
+                    'notes.txt': 'ignored'},
+            gigs=[gig])
+
+        self.assertEqual(['parked.json'], self.pdf.unreferenced_track_files(
+            str(self.config_path(root))))
+
+    def test_no_orphans_when_every_file_is_listed(self):
+        root = self.make_data_root(tracks={'only.json': {'display': []}})
+
+        self.assertEqual([], self.pdf.unreferenced_track_files(
+            str(self.config_path(root))))
+
 
 @unittest.skipUnless(have_zss(), 'snapshot fixture unavailable')
 class SplitBlockTests(unittest.TestCase):
