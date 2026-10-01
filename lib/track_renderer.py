@@ -7,9 +7,12 @@ CSS and fonts are served by the local tornado server from /static,
 so no internet connection is needed - safe for offline gigs.
 """
 
-import os
-import json
+import base64
 import html as html_mod
+import json
+import logging
+import os
+from urllib.parse import urlsplit
 
 from leadsheet import parse_leadsheet, transpose_sheet
 from zss_parser import (
@@ -22,6 +25,7 @@ from keyboard_svg import (
 
 DATA_DIR = os.environ.get(
     'ZYNTHIAN_MY_DATA_DIR', '/zynthian/zynthian-my-data')
+LOGGER = logging.getLogger(__name__)
 
 
 import re as _re
@@ -186,6 +190,107 @@ def _build_html_block(track_data):
     return ''
 
 
+_IMAGE_MIME_TYPES = {
+    '.gif': 'image/gif',
+    '.jpeg': 'image/jpeg',
+    '.jpg': 'image/jpeg',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml',
+    '.webp': 'image/webp',
+}
+
+
+def build_images_html(track_data, track_json_path):
+    images = track_data.get('images', [])
+    if not isinstance(images, list):
+        LOGGER.warning('Skipping images in %s: expected a list', track_json_path)
+        return ''
+
+    track_dir = os.path.realpath(
+        os.path.dirname(os.path.abspath(track_json_path)))
+    parts = []
+
+    for image in images:
+        reason = None
+        candidate = None
+        mime_type = None
+
+        if isinstance(image, dict):
+            source = image.get('source')
+            caption = image.get('caption', '')
+        else:
+            source = image
+            caption = ''
+
+        if not isinstance(source, str) or not source.strip():
+            reason = 'entry must provide a non-empty source path'
+        else:
+            source = source.strip()
+            if caption is None:
+                caption = ''
+            elif not isinstance(caption, str):
+                caption = str(caption)
+            caption = caption.strip()
+            if '\x00' in source:
+                reason = 'path contains a null byte'
+            elif any(part == '..' for part in source.replace('\\', '/').split('/')):
+                reason = 'path traversal is not allowed'
+            else:
+                try:
+                    parsed = urlsplit(source)
+                except ValueError:
+                    reason = 'invalid path'
+                else:
+                    extension = os.path.splitext(source)[1].lower()
+                    if (os.path.isabs(source) or parsed.scheme or
+                            parsed.netloc):
+                        reason = 'path must be relative to the track JSON file'
+                    elif extension not in _IMAGE_MIME_TYPES:
+                        reason = 'unsupported image extension'
+                    else:
+                        candidate = os.path.realpath(
+                            os.path.join(track_dir, source))
+                        try:
+                            inside_track_dir = os.path.commonpath(
+                                (track_dir, candidate)) == track_dir
+                        except ValueError:
+                            inside_track_dir = False
+                        if not inside_track_dir:
+                            reason = 'path escapes the track JSON directory'
+                        elif not os.path.isfile(candidate):
+                            reason = 'file not found'
+                        else:
+                            mime_type = _IMAGE_MIME_TYPES[extension]
+
+        if reason:
+            LOGGER.warning(
+                'Skipping image %r in %s: %s', image, track_json_path, reason)
+            continue
+
+        try:
+            with open(candidate, 'rb') as image_file:
+                encoded = base64.b64encode(image_file.read()).decode('ascii')
+        except OSError as error:
+            LOGGER.warning(
+                'Skipping image %r in %s: %s', image, track_json_path, error)
+            continue
+
+        alt = html_mod.escape(
+            caption or os.path.basename(source), quote=True)
+        caption_html = ''
+        if caption:
+            caption_html = '<div class="track-image-caption">{}</div>'.format(
+                html_mod.escape(caption, quote=True))
+        parts.append(
+            '<div class="track-image">{}<img src="data:{};base64,{}" alt="{}">'
+            '</div>'.format(caption_html, mime_type, encoded, alt))
+
+    if not parts:
+        return ''
+    return '<div class="track-images">\n{}\n</div>'.format(
+        '\n'.join(parts))
+
+
 def _build_track_table_html(track_data):
     """Render the track structure table (section headers + bank rows)."""
     headers = track_data.get('headers', [])
@@ -218,7 +323,8 @@ def _build_track_table_html(track_data):
 
 
 def _build_page(title, notes, gig_id, semitones, display,
-                leadsheet_html, keyboard_svg, table_html, html_block=''):
+                leadsheet_html, keyboard_svg, table_html, html_block='',
+                images_html=''):
     """Assemble the chart page body (nav bar + sections)."""
     transpose_label = '{:+d}'.format(semitones) if semitones else '0'
     back_url = '/gig/{}'.format(html_mod.escape(str(gig_id)))
@@ -263,6 +369,8 @@ def _build_page(title, notes, gig_id, semitones, display,
             body_parts.append('<div class="html-block">')
             body_parts.append(html_block)
             body_parts.append('</div>')
+        elif block == 'images' and images_html:
+            body_parts.append(images_html)
     body_parts.append('</div>')
 
     return '\n'.join(body_parts)
@@ -338,6 +446,10 @@ def render_chart(gig_id, track_json_path,
     structure = track_data.get('structure', {})
     table_html = _build_track_table_html(structure)
 
+    images_html = ''
+    if isinstance(display, list) and 'images' in display:
+        images_html = build_images_html(track_data, track_json_path)
+
     return _build_page(
         title=title,
         notes=notes,
@@ -348,4 +460,5 @@ def render_chart(gig_id, track_json_path,
         keyboard_svg=keyboard_svg,
         table_html=table_html,
         html_block=_build_html_block(track_data),
+        images_html=images_html,
     )
