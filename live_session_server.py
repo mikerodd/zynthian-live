@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
+import html
 import logging
 import asyncio
 import tornado.web
 import tornado.ioloop
-from tornado.escape import escape
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from zs3_handler import init_osc, load_snapshot, load_zs3
@@ -77,7 +77,7 @@ class ChartRenderHandler(BaseHandler):
                 '<title>Invalid track JSON</title>'
                 '<h1>Invalid JSON in {}</h1><p>{}</p>'
                 '<p>The file must be valid JSON; check the position above.</p>'
-                .format(escape(name), escape(str(e))))
+                .format(html.escape(name), html.escape(str(e))))
             return
         except Exception as e:
             logging.error("render_chart failed: %s", e)
