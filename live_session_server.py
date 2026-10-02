@@ -6,7 +6,6 @@ import html
 import logging
 import asyncio
 import tornado.web
-import tornado.ioloop
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from zs3_handler import init_osc, load_snapshot, load_zs3
