@@ -41,7 +41,7 @@ body {
 .gig-list {
     display: -webkit-box; display: -webkit-flex; display: flex;
     -webkit-flex-wrap: wrap; flex-wrap: wrap;
-    padding: 10px;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
 }
 
 .gig-card {
@@ -156,7 +156,7 @@ body {
     -webkit-flex-wrap: wrap; flex-wrap: wrap;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 10px;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
 }
 
 .track-btn {
