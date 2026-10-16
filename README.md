@@ -118,10 +118,10 @@ a top-level `includes` key:
 
 ```json
 {
-  "includes": ["config-the-spokes.json", "config-tribute-rolling-stones.json"],
+  "includes": ["config-ban1.json", "config-tribute-rolling-stones.json"],
   "gigs": [
     { "name": "All tracks", "tracks": [ ... ] },
-    { "name": "RSPro", "tracks": [ ... ] }
+    { "name": "Gig September", "tracks": [ ... ] }
   ]
 }
 ```
