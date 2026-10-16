@@ -87,6 +87,12 @@ def _load_include(config_path, include):
 
     try:
         included = _read_config(included_path)
+    except FileNotFoundError as exc:
+        # Missing is the common mistake (often a forgotten ".json"), so say
+        # what is wrong and, when a sibling with that extension exists, name
+        # it instead of dumping the raw FileNotFoundError.
+        raise ValueError(
+            _missing_include_message(config_path, include)) from exc
     except (OSError, ValueError) as exc:
         raise ValueError(
             'cannot read included config {} (from {}): {}'.format(
@@ -101,6 +107,21 @@ def _load_include(config_path, include):
             included_path, INCLUDES_KEY)
 
     return included.get('gigs', [])
+
+
+def _missing_include_message(config_path, include):
+    """Describe an ``includes`` entry whose file could not be found.
+
+    When the name lacks a ``.json`` suffix but ``<name>.json`` sits beside the
+    config, point at it: that typo is by far the likeliest cause.
+    """
+    base = os.path.dirname(os.path.abspath(config_path))
+    message = 'included config {!r} not found in {}'.format(include, base)
+    if not include.lower().endswith('.json'):
+        candidate = include + '.json'
+        if os.path.isfile(os.path.join(base, candidate)):
+            message += '; did you mean {!r}?'.format(candidate)
+    return message
 
 
 def _read_config(path):

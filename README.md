@@ -151,7 +151,10 @@ Points worth knowing:
 
 Both the web server and the PDF exporter go through the same loader, so
 `gigs_to_pdf.py --config config-the-spokes.json` prints just that gig while
-the server serves the merged list. Because `includes` lives in the file, the
+the server serves the merged list. Passing `--gigs all` instead builds one
+global PDF from every track of every merged gig (own and included), keeping
+only the first sheet per track name, so no hand-maintained "All tracks" gig is
+needed. Because `includes` lives in the file, the
 deploy step must ship the included files too — `zynthian-live-data/install.sh`
 copies `config.json` and every `config-*.json` next to it.
 
