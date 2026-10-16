@@ -91,6 +91,21 @@ class LoadConfigTest(DataRootMixin, unittest.TestCase):
             load_config(str(path))
         self.assertIn('config-absent.json', str(caught.exception))
 
+    def test_missing_include_without_extension_suggests_the_json(self):
+        """A forgotten '.json' is named back in the error, not just a path."""
+        root = self.make_data_root(gigs=[self.default_gig([])])
+        (root / 'live-session' / 'config-orphans.json').write_text(
+            json.dumps({'gigs': []}))
+        path = self.config_path(root)
+        config = json.loads(path.read_text())
+        config['includes'] = ['config-orphans']
+        path.write_text(json.dumps(config))
+        with self.assertRaises(ValueError) as caught:
+            load_config(str(path))
+        message = str(caught.exception)
+        self.assertIn('config-orphans', message)
+        self.assertIn("did you mean 'config-orphans.json'", message)
+
     def test_malformed_include_raises(self):
         root = self.make_data_root(gigs=[self.default_gig([])])
         (root / 'live-session' / 'config-broken.json').write_text('{ nope')
@@ -227,6 +242,40 @@ class GigsToPdfTest(DataRootMixin, unittest.TestCase):
         self.assertEqual(titles, ['one.json', 'two.json'])
         self.assertIn('Mine', html)
         self.assertIn('Other', html)
+
+    def test_gigs_all_dedupes_tracks_by_name_first_gig_wins(self):
+        module = import_gigs_to_pdf()
+        if module is None:
+            self.skipTest('scripts/gigs_to_pdf.py is not present')
+
+        def track(name, filename):
+            return {'name': name, 'json_filename': 'tracks/' + filename,
+                    'notes': name + ' notes'}
+
+        def structure(letter):
+            return {'display': ['structure'],
+                    'structure': {'headers': [letter],
+                                  'rows': [{'cells': [1]}]}}
+
+        root = self.make_data_root(
+            tracks={'one.json': structure('A'),
+                    'two.json': structure('B'),
+                    'three.json': structure('C')},
+            # config.json's own gig declares "Song" first, so its file wins
+            # over the same-named track contributed by the include.
+            gigs=[{'name': 'Mine', 'description': 'Fixture gig',
+                   'tracks': [track('Song', 'one.json')]}],
+            includes={'config-other.json': [
+                {'name': 'Other', 'description': 'Fixture gig',
+                 'tracks': [track('Song', 'two.json'),
+                            track('Another', 'three.json')]}]})
+
+        html, titles, cover = module.build_html(
+            str(self.config_path(root)), alpha=True, all_tracks=True)
+        self.assertEqual(titles, ['Another', 'Song'])
+        self.assertEqual('All tracks', cover)
+        self.assertNotIn('class="sheet" id="track-2"', html)
+
 
 
 if __name__ == '__main__':
