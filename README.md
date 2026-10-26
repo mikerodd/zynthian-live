@@ -1,6 +1,10 @@
 # Zynthian Live Session
 
-Web-based live session manager for Zynthian. Displays chord charts, notation images, keyboard splits, and loads ZS3 sub-snapshots via OSC during rehearsals and gigs.
+This app is mostly coded via [opencode](https://opencode.ai) and free tier models (Big Pickle / Beam).
+
+Web-based live session manager for [Zynthian](http://www.zynthian.org), a compact, self-contained, music-making device. 
+
+The session manager displays chord charts, notation images, keyboard splits, and loads ZS3 sub-snapshots via OSC during rehearsals and gigs.
 
 Pages are generated dynamically for each request. The server reads `config.json` and the selected track's JSON from `/zynthian/zynthian-my-data/live-session/` and renders the content through Tornado templates; chart components such as the chord grid, keyboard SVG, and structure table are assembled server-side. Pre-generated `gigs/*.html` files are not required or served by the current application.
 
@@ -118,7 +122,7 @@ a top-level `includes` key:
 
 ```json
 {
-  "includes": ["config-ban1.json", "config-tribute-rolling-stones.json"],
+  "includes": ["config-band1.json", "config-tribute-rolling-stones.json"],
   "gigs": [
     { "name": "All tracks", "tracks": [ ... ] },
     { "name": "Gig September", "tracks": [ ... ] }
