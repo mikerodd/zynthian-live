@@ -238,6 +238,19 @@ class PdfPipelineGoldenTests(GoldenTestCase):
         self.assertEqual('Test Gig', cover)
         self.assertGolden('pdf_alpha_index', doc)
 
+    def test_alpha_index_with_page_numbers(self):
+        tracks = {'b.json': full_track(['structure']),
+                  'a.json': full_track(['structure'])}
+        root = self.make_data_root(tracks=tracks)
+        doc, titles, cover = self.pdf.build_html(
+            str(self.config_path(root)), alpha=True,
+            index_pages=[3, 7])
+        self.assertEqual(['a.json', 'b.json'], titles)
+        self.assertIn('index-page', doc)
+        self.assertIn('>3<', doc)
+        self.assertIn('>7<', doc)
+        self.assertGolden('pdf_alpha_index_pages', doc)
+
 
 @unittest.skipUnless(have_zss(), 'snapshot fixture unavailable')
 class SplitBlockTests(unittest.TestCase):
@@ -291,6 +304,39 @@ class SplitBlockTests(unittest.TestCase):
         path = Path(temp_dir.name) / 'track.json'
         path.write_text(json.dumps({'display': ['split']}), encoding='utf-8')
         return str(path)
+
+
+
+class PageNumberOverlayTests(unittest.TestCase):
+    def test_add_page_numbers_overlays_each_page(self):
+        pdf_mod = import_gigs_to_pdf()
+        if pdf_mod is None:
+            self.skipTest('scripts/gigs_to_pdf.py not found')
+        try:
+            import pymupdf
+        except ImportError:
+            self.skipTest('pymupdf not installed')
+        import os
+        import tempfile
+        doc = pymupdf.open()
+        for _ in range(2):
+            doc.new_page(width=595, height=842)
+        path = tempfile.mktemp(suffix='.pdf')
+        doc.save(path)
+        doc.close()
+        try:
+            self.assertTrue(pdf_mod.add_page_numbers(path))
+            doc = pymupdf.open(path)
+            self.assertEqual(2, doc.page_count)
+            for i, page in enumerate(doc):
+                self.assertIn(str(i + 1), page.get_text())
+            doc.close()
+        finally:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+
 
 
 if __name__ == '__main__':
