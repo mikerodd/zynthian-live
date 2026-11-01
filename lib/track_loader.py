@@ -31,6 +31,7 @@ the *child* remains an error, exactly as before inheritance existed.
 import json
 import logging
 import os
+from typing import Any
 
 LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ LOGGER = logging.getLogger(__name__)
 INHERIT_KEY = 'inherit'
 
 
-def load_track(path):
+def load_track(path: str) -> dict[str, Any]:
     """Read a track JSON file and merge in its parent if it names one.
 
     Parameters
@@ -101,12 +102,12 @@ def load_track(path):
     return merged
 
 
-def _read_json(path):
+def _read_json(path: str) -> Any:
     with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
-def _resolve_parent(child_path, inherit):
+def _resolve_parent(child_path: str, inherit: str) -> str:
     """Resolve an ``inherit`` value against the child's directory.
 
     The parent must stay inside that directory, so a track file cannot pull

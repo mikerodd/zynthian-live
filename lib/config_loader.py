@@ -36,6 +36,7 @@ mounted keeps serving an empty page.
 import json
 import logging
 import os
+from typing import Any
 
 LOGGER = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ LOGGER = logging.getLogger(__name__)
 INCLUDES_KEY = 'includes'
 
 
-def load_config(path):
+def load_config(path: str) -> dict[str, Any]:
     """Read a gig config and append the gigs of every file it includes.
 
     Parameters
@@ -76,7 +77,7 @@ def load_config(path):
     return {'gigs': gigs}
 
 
-def _load_include(config_path, include):
+def _load_include(config_path: str, include: Any) -> list[dict[str, Any]]:
     """Return the gigs contributed by one ``includes`` entry."""
     if not isinstance(include, str) or not include:
         raise ValueError(
@@ -109,7 +110,7 @@ def _load_include(config_path, include):
     return included.get('gigs', [])
 
 
-def _missing_include_message(config_path, include):
+def _missing_include_message(config_path: str, include: Any) -> str:
     """Describe an ``includes`` entry whose file could not be found.
 
     When the name lacks a ``.json`` suffix but ``<name>.json`` sits beside the
@@ -124,7 +125,7 @@ def _missing_include_message(config_path, include):
     return message
 
 
-def _read_config(path):
+def _read_config(path: str) -> dict[str, Any]:
     config = _read_json(path)
     if not isinstance(config, dict):
         raise ValueError(
@@ -132,12 +133,12 @@ def _read_config(path):
     return config
 
 
-def _read_json(path):
+def _read_json(path: str) -> Any:
     with open(path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
-def _resolve_include(config_path, include):
+def _resolve_include(config_path: str, include: str) -> str:
     """Resolve an ``includes`` value against the including config's directory.
 
     The include must stay inside that directory, so a config cannot pull in

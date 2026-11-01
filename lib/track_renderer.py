@@ -12,6 +12,7 @@ import html as html_mod
 import json
 import logging
 import os
+from typing import Any
 from urllib.parse import urlsplit
 
 from leadsheet import parse_leadsheet, transpose_sheet
@@ -30,7 +31,7 @@ import re as _re
 _CHORD_ROOT = _re.compile(r'^([A-G])([#b]?.*)')
 
 
-def _format_note_root(note_str):
+def _format_note_root(note_str: str) -> str:
     """Format a note/chord root with accidental in superscript.
 
     ``Db``    → ``D<sup>b</sup>``
@@ -47,7 +48,7 @@ def _format_note_root(note_str):
         html_mod.escape(root), html_mod.escape(ext))
 
 
-def _format_chord(chord):
+def _format_chord(chord: str) -> str:
     """Format a chord string with the extension in superscript.
 
     ``A9sus4``    → ``A<sup>9sus4</sup>``
@@ -81,7 +82,7 @@ _DOTS = '<div class="ls-bar-dots"><div class="ls-bar-dot"></div><div class="ls-b
 _STROKE = '<div class="ls-bar-stroke"></div>'
 
 
-def _beat_time_html(beat_str):
+def _beat_time_html(beat_str: str) -> str:
     """Render a time signature as a vertical fraction (e.g. 4/4 → 4 over 4)."""
     parts = beat_str.split('/')
     if len(parts) == 2:
@@ -90,7 +91,7 @@ def _beat_time_html(beat_str):
     return '<div class="ls-beat-time">{}</div>'.format(html_mod.escape(beat_str))
 
 
-def _barline_html(bar_type):
+def _barline_html(bar_type: str) -> str:
     """Return HTML for a barline element (pure CSS, no font rendering)."""
     if bar_type == 'end-start-repeat':
         return '<div class="ls-barline">{}{}{}{}</div>'.format(_DOTS, _STROKE, _STROKE, _DOTS)
@@ -103,7 +104,7 @@ def _barline_html(bar_type):
     return '<div class="ls-barline">{}</div>'.format(_STROKE)
 
 
-def _build_leadsheet_html(sheet, semitones):
+def _build_leadsheet_html(sheet: Any, semitones: int) -> str:
     """Render parsed leadsheet data as an HTML string."""
     if semitones != 0:
         sheet = transpose_sheet(sheet, semitones)
@@ -180,7 +181,7 @@ def _build_leadsheet_html(sheet, semitones):
     return '\n'.join(parts)
 
 
-def _build_html_block(track_data):
+def _build_html_block(track_data: dict[str, Any]) -> str:
     """Return the raw HTML of the optional 'html' display block ('' if none)."""
     block = track_data.get('html')
     if isinstance(block, dict):
@@ -198,7 +199,7 @@ _IMAGE_MIME_TYPES = {
 }
 
 
-def build_images_html(track_data, track_json_path):
+def build_images_html(track_data: dict[str, Any], track_json_path: str) -> str:
     images = track_data.get('images', [])
     if not isinstance(images, list):
         LOGGER.warning('Skipping images in %s: expected a list', track_json_path)
@@ -289,7 +290,7 @@ def build_images_html(track_data, track_json_path):
         '\n'.join(parts))
 
 
-def _build_track_table_html(track_data):
+def _build_track_table_html(track_data: dict[str, Any]) -> str:
     """Render the track structure table (section headers + bank rows)."""
     headers = track_data.get('headers', [])
     rows = track_data.get('rows', [])
@@ -320,7 +321,7 @@ def _build_track_table_html(track_data):
     return '\n'.join(parts)
 
 
-def _build_page(title, notes, gig_id, semitones, blocks):
+def _build_page(title: str, notes: str, gig_id: Any, semitones: int, blocks: list[tuple[str, str]]) -> str:
     """Assemble the chart page body (nav bar + sections)."""
     transpose_label = '{:+d}'.format(semitones) if semitones else '0'
     back_url = '/gig/{}'.format(html_mod.escape(str(gig_id)))
@@ -370,10 +371,10 @@ def _build_page(title, notes, gig_id, semitones, blocks):
 
 # ── public API ──────────────────────────────────────────────────────────
 
-def render_chart(gig_id, track_json_path,
-                 zss_path=None, zs3_id=None,
-                 title='', notes='', semitones=0,
-                 input_devices=None):
+def render_chart(gig_id: Any, track_json_path: str,
+                 zss_path: str | None = None, zs3_id: str | None = None,
+                 title: str = '', notes: str = '', semitones: int = 0,
+                 input_devices: list[dict[str, Any]] | None = None) -> str:
     """Render a chart page body and return it as an HTML fragment.
 
     Parameters
@@ -414,8 +415,9 @@ def render_chart(gig_id, track_json_path,
     )
 
 
-def build_display_blocks(track_data, track_json_path, semitones=0,
-                         zss_path=None, zs3_id=None, input_devices=None):
+def build_display_blocks(track_data: dict[str, Any], track_json_path: str, semitones: int = 0,
+                         zss_path: str | None = None, zs3_id: str | None = None,
+                         input_devices: list[dict[str, Any]] | None = None) -> list[tuple[str, str]]:
     """Render the selected display blocks as a list of ``(name, html)`` pairs.
 
     Returns one entry per block named in ``track_data['display']`` that has

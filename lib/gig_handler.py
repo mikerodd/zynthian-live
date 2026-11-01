@@ -27,6 +27,7 @@ appended after this file's own; see lib/config_loader.py.
 """
 import os
 import logging
+from typing import Any
 
 from config_loader import load_config
 
@@ -37,15 +38,15 @@ MY_DATA_DIR = os.environ.get(
 CONFIG_PATH = os.path.join(MY_DATA_DIR, 'live-session', 'config.json')
 
 
-def _load_config():
+def _load_config() -> dict[str, Any]:
     return load_config(CONFIG_PATH)
 
 
-def _base_dir():
+def _base_dir() -> str:
     return os.path.dirname(CONFIG_PATH)
 
 
-def _parse_bank_program(snapshot_path):
+def _parse_bank_program(snapshot_path: str) -> tuple[int | None, int | None]:
     """Extract bank and program numbers from a snapshot path like '.../004-Gigs/002-set2.zss'."""
     try:
         basename = os.path.basename(snapshot_path)
@@ -57,14 +58,14 @@ def _parse_bank_program(snapshot_path):
         return None, None
 
 
-def _resolve(path):
+def _resolve(path: str) -> str:
     """Resolve a config-relative path to an absolute path."""
     if os.path.isabs(path):
         return path
     return os.path.normpath(os.path.join(_base_dir(), path))
 
 
-def list_gigs():
+def list_gigs() -> list[dict[str, Any]]:
     config = _load_config()
     gigs = []
     for i, gig in enumerate(config.get('gigs', [])):
@@ -81,7 +82,7 @@ def list_gigs():
     return gigs
 
 
-def load_gig(gig_id):
+def load_gig(gig_id: str) -> dict[str, Any] | None:
     config = _load_config()
     gigs = config.get('gigs', [])
     try:
@@ -90,7 +91,7 @@ def load_gig(gig_id):
         return None
 
 
-def get_track_paths(gig_id, track_idx):
+def get_track_paths(gig_id: str, track_idx: str) -> dict[str, Any] | None:
     """Return resolved absolute paths for a track's files.
 
     Returns dict with keys: json_path, txt_path, snapshot_path.
