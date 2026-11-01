@@ -3,3 +3,6 @@ venv/
 *.pyc
 __pycache__/
 test/
+
+# local-only helper
+scripts/generate_all_tracks.sh
