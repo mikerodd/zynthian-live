@@ -158,10 +158,10 @@ class DataRootMixin:
 
 
 def import_gigs_to_pdf():
-    """Import scripts/gigs_to_pdf.py by path; None when it is absent."""
+    """Import zynthian-live/scripts/gigs_to_pdf.py by path; None when absent."""
     import importlib.util
 
-    path = REPO_ROOT / 'scripts' / 'gigs_to_pdf.py'
+    path = LIVE_DIR / 'scripts' / 'gigs_to_pdf.py'
     if not path.is_file():
         return None
     spec = importlib.util.spec_from_file_location('gigs_to_pdf_under_test', path)
