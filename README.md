@@ -8,6 +8,13 @@ The session manager displays chord charts, notation images, keyboard splits, and
 
 Pages are generated dynamically for each request. The server reads `config.json` and the selected track's JSON from `/zynthian/zynthian-my-data/live-session/` and renders the content through Tornado templates; chart components such as the chord grid, keyboard SVG, and structure table are assembled server-side. Pre-generated `gigs/*.html` files are not required or served by the current application.
 
+# How does it look like?
+
+<img width="1833" height="945" alt="Capture d’écran du 2026-11-01 09-30-17" src="https://github.com/user-attachments/assets/6e92ed85-bed1-4608-a641-a10bfce201c3" />
+<img width="1833" height="945" alt="Capture d’écran du 2026-11-01 09-30-47" src="https://github.com/user-attachments/assets/6c4acace-761c-476d-854e-7207acad51e2" />
+<img width="1833" height="945" alt="Capture d’écran du 2026-11-01 09-30-51" src="https://github.com/user-attachments/assets/12634745-aabd-4fff-bd10-ae12bb3eef2f" />
+
+
 ## Structure
 
 ```
