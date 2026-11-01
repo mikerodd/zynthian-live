@@ -157,7 +157,7 @@ def _build_leadsheet_html(sheet, semitones):
                 elif b == '/':
                     parts.append('<div class="ls-beat slash">/</div>')
                 elif b == '%':
-                    parts.append('<div class="ls-beat lazy">%</div>')
+                    parts.append('<div class="ls-beat">%</div>')
                 else:
                     parts.append(
                         '<div class="ls-beat">{}</div>'.format(

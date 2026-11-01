@@ -273,6 +273,7 @@ body {
 }
 .ls-beats-row {
     display: -webkit-box; display: -webkit-flex; display: flex;
+    margin-top: auto;    
     -webkit-flex-direction: row; flex-direction: row;
     -webkit-align-items: baseline; align-items: baseline;
     -webkit-justify-content: center; justify-content: center;
@@ -285,12 +286,6 @@ body {
 }
 .ls-measure .ls-beat.empty { color: transparent; }
 .ls-measure .ls-beat.slash { color: #888; }
-.ls-measure .ls-beat.lazy {
-    color: #000; font-size: 18px; font-weight: 700;
-    align-self: center;
-    -webkit-box-pack: center; -webkit-justify-content: center;
-    justify-content: center;
-}
 .ls-barline {
     display: -webkit-inline-box; display: -webkit-inline-flex;
     display: inline-flex;
