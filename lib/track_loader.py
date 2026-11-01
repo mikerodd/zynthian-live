@@ -33,6 +33,8 @@ import logging
 import os
 from typing import Any
 
+from security import safe_resolve_path
+
 LOGGER = logging.getLogger(__name__)
 
 #: Top-level key naming the parent track file.
@@ -121,7 +123,8 @@ def _resolve_parent(child_path: str, inherit: str) -> str:
             '{!r}'.format(inherit))
 
     base = os.path.dirname(os.path.abspath(child_path))
-    parent = os.path.normpath(os.path.join(base, inherit))
-    if parent != base and not parent.startswith(base + os.sep):
-        raise ValueError('points outside the track directory: {!r}'.format(inherit))
+    parent = safe_resolve_path(base, inherit)
+    if parent is None:
+        raise ValueError(
+            'points outside the track directory: {!r}'.format(inherit))
     return parent

@@ -38,6 +38,8 @@ import logging
 import os
 from typing import Any
 
+from security import safe_resolve_path
+
 LOGGER = logging.getLogger(__name__)
 
 #: Top-level key naming sibling config files to merge in.
@@ -152,8 +154,8 @@ def _resolve_include(config_path: str, include: str) -> str:
             '{!r}'.format(include))
 
     base = os.path.dirname(os.path.abspath(config_path))
-    target = os.path.normpath(os.path.join(base, include))
-    if target != base and not target.startswith(base + os.sep):
+    target = safe_resolve_path(base, include)
+    if target is None:
         raise ValueError(
             'points outside the config directory: {!r}'.format(include))
     return target

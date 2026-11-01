@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 from leadsheet import parse_leadsheet, transpose_sheet
 from track_loader import load_track
+from security import safe_resolve_path
 from zss_parser import collect_skins
 from keyboard_svg import (
     split_svg, rgb_to_hex, DEFAULT_COLORS,
@@ -247,19 +248,23 @@ def build_images_html(track_data: dict[str, Any], track_json_path: str) -> str:
                     elif extension not in _IMAGE_MIME_TYPES:
                         reason = 'unsupported image extension'
                     else:
-                        candidate = os.path.realpath(
-                            os.path.join(track_dir, source))
-                        try:
-                            inside_track_dir = os.path.commonpath(
-                                (track_dir, candidate)) == track_dir
-                        except ValueError:
-                            inside_track_dir = False
-                        if not inside_track_dir:
-                            reason = 'path escapes the track JSON directory'
-                        elif not os.path.isfile(candidate):
-                            reason = 'file not found'
+                        candidate = safe_resolve_path(track_dir, source)
+                        if candidate is None:
+                            reason = 'path must be relative to the track JSON file'
                         else:
-                            mime_type = _IMAGE_MIME_TYPES[extension]
+                            real_candidate = os.path.realpath(candidate)
+                            try:
+                                inside_track_dir = os.path.commonpath(
+                                    (track_dir, real_candidate)) == track_dir
+                            except ValueError:
+                                inside_track_dir = False
+                            if not inside_track_dir:
+                                reason = 'path escapes the track JSON directory'
+                            elif not os.path.isfile(real_candidate):
+                                reason = 'file not found'
+                            else:
+                                candidate = real_candidate
+                                mime_type = _IMAGE_MIME_TYPES[extension]
 
         if reason:
             LOGGER.warning(
