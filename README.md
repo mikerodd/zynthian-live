@@ -25,7 +25,6 @@ zynthian-live/
 ├── install.sh             — deploy server code to Zynthian
 └── scripts/               — PDF generation helpers
     ├── gigs_to_pdf.py
-    └── generate_all_tracks.sh
 ```
 
 ## Desktop setup (dev / test)
