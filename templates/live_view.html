@@ -8,7 +8,16 @@
     </div>
     <div class="track-list" id="track-list">
         {% for i, track in enumerate(gig.get('tracks', [])) %}
-        <a class="track-btn" href="/chart/{{ gig_id }}/{{ i }}">
+        {% set track_status = (track.get('status') or '').strip() %}
+        {% set status_color_key = {'not started': 'pink', 'in progress': 'orange', 'ok mike': 'lightgreen', 'rehearsed': 'green'}.get(track_status.lower(), 'grey') %}
+        {% set status_color = {'grey': '#e8e8e8'}.get(status_color_key, status_color_key) %}
+        {% set status_slug = track_status.lower().replace(' ', '-') if track_status else 'unknown' %}
+        {% set status_color_slug = 'light-green' if status_color_key == 'lightgreen' else status_color_key %}
+        <a class="track-btn track-status-{{ status_color_key }} track-status-{{ status_slug }} track-status-color-{{ status_color_slug }} status-{{ status_color_key }} status-{{ status_slug }}"
+           data-status="{{ track_status }}"
+           data-status-color="{{ 'light green' if status_color_key == 'lightgreen' else ('light grey' if status_color_key == 'grey' else status_color_key) }}"
+           href="/chart/{{ gig_id }}/{{ i }}"
+           style="background-color: {{ status_color }};">
             <span class="track-number">{{ i + 1 }}</span>
             <span class="track-name">{{ track.get('name', 'Track ' + str(i + 1)) }}</span>
         </a>

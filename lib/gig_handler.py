@@ -15,7 +15,8 @@ Config format (v2):
           "json_filename": "tracks/song.json",
           "txt_filename": "tracks/song.txt",
           "zs3_id": "zs3-10",
-          "notes": "Artist | 120 BPM"
+          "notes": "Artist | 120 BPM",
+          "status": "OK Mike"
         }
       ]
     }
@@ -114,5 +115,6 @@ def get_track_paths(gig_id: str, track_idx: str) -> dict[str, Any] | None:
         'zs3_id': track.get('zs3_id'),
         'name': track.get('name', ''),
         'notes': track.get('notes', ''),
+        'status': track.get('status'),
         'input_devices': gig.get('input_devices', []),
     }
