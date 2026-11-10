@@ -21,7 +21,7 @@ class LiveViewStatusTests(unittest.TestCase):
         return self.loader.load('live_view.html').generate(
             gig=gig, gig_id='0').decode('utf-8')
 
-    def test_status_colors(self):
+    def test_status_colors_on_track_number(self):
         tracks = [
             {'name': 'Unknown', 'json_filename': 'tracks/a.json'},
             {'name': 'Not started', 'json_filename': 'tracks/b.json',
@@ -34,11 +34,28 @@ class LiveViewStatusTests(unittest.TestCase):
              'status': 'Rehearsed'},
         ]
         html = self.render(tracks)
-        self.assertIn('style="background-color: #e8e8e8;"', html)
-        self.assertIn('style="background-color: pink;"', html)
-        self.assertIn('style="background-color: orange;"', html)
-        self.assertIn('style="background-color: lightgreen;"', html)
-        self.assertIn('style="background-color: green;"', html)
+        self.assertIn(
+            '<span class="track-number" style="background-color: grey;">1</span>',
+            html)
+        self.assertIn(
+            '<span class="track-number" style="background-color: pink;">2</span>',
+            html)
+        self.assertIn(
+            '<span class="track-number" style="background-color: orange;">3</span>',
+            html)
+        self.assertIn(
+            '<span class="track-number" style="background-color: lightgreen;">4</span>',
+            html)
+        self.assertIn(
+            '<span class="track-number" style="background-color: green;">5</span>',
+            html)
+
+    def test_track_button_has_no_status_background(self):
+        tracks = [{'name': 'A', 'json_filename': 'tracks/a.json',
+                   'status': 'Rehearsed'}]
+        html = self.render(tracks)
+        self.assertIn('class="track-btn ', html)
+        self.assertNotIn('style="background-color: green;"', html.split('track-number')[0])
 
 
 if __name__ == '__main__':
