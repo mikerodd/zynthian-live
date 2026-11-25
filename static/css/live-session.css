@@ -262,10 +262,10 @@ body {
 }
 
 .pa-btn {
-    min-width: 70px;
-    min-height: 50px;
+    min-width: 60px;
+    min-height: 40px;
     padding: 0px 0px;
-    font-size: 24px;
+    font-size: 20px;
     color: #333;
     background: #ddd;
     border: none;
