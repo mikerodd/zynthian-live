@@ -3,6 +3,7 @@
 import os
 import sys
 import html
+import json
 import logging
 import asyncio
 import tornado.web
@@ -11,6 +12,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from zs3_handler import init_osc, load_snapshot, load_zs3
 from gig_handler import list_gigs, load_gig, get_track_paths
 from track_renderer import render_chart
+import mpd_client
+from mpd_client import SEEK_STEP
 
 logging.basicConfig(format='%(levelname)s:%(module)s: %(message)s',
                     stream=sys.stderr, level=logging.INFO)
@@ -20,6 +23,18 @@ STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 
 
+# Play-along mode is a single server-side switch shared by every device.
+PLAY_ALONG = {'enabled': False}
+
+MPD_ACTIONS = {
+    'pause': lambda: mpd_client.pause(),
+    'stop': lambda: mpd_client.stop(),
+    'begin': lambda: mpd_client.begin(),
+    'back': lambda: mpd_client.seek(-SEEK_STEP),
+    'forward': lambda: mpd_client.seek(SEEK_STEP),
+}
+
+
 class BaseHandler(tornado.web.RequestHandler):
     def get_current_user(self):
         return True
@@ -27,11 +42,25 @@ class BaseHandler(tornado.web.RequestHandler):
     def get_template_path(self):
         return TEMPLATE_DIR
 
+    def mpd_result(self, call):
+        try:
+            call()
+        except mpd_client.MpdError as e:
+            self.set_status(409)
+            self.write({'ok': False, 'error': str(e)})
+        except OSError as e:
+            logging.error('MPD request failed: %s', e)
+            self.set_status(503)
+            self.write({'ok': False, 'error': 'MPD unreachable'})
+        else:
+            self.write({'ok': True})
+
 
 class GigListHandler(BaseHandler):
     def get(self):
         gigs = list_gigs()
-        self.render('gig_list.html', gigs=gigs)
+        self.render('gig_list.html', gigs=gigs,
+                    play_along_mode=PLAY_ALONG['enabled'])
 
 
 class LiveViewHandler(BaseHandler):
@@ -80,7 +109,10 @@ class ChartRenderHandler(BaseHandler):
             logging.error("render_chart failed: %s", e)
             self.send_error(500)
             return
-        self.render('chart.html', title=paths['name'], chart_body=chart_body)
+        self.render('chart.html', title=paths['name'], chart_body=chart_body,
+                    gig_id=gig_id, track_idx=track_idx,
+                    play_along=paths['play_along'],
+                    play_along_mode=PLAY_ALONG['enabled'])
 
 
 class ApiLoadSnapshotHandler(BaseHandler):
@@ -92,6 +124,55 @@ class ApiLoadSnapshotHandler(BaseHandler):
         except Exception as e:
             logging.error("load-snapshot failed: {}".format(e))
             self.write({'success': False, 'error': str(e)})
+
+
+class ApiPlayAlongModeHandler(BaseHandler):
+    def get(self):
+        self.write({'enabled': PLAY_ALONG['enabled']})
+
+    def post(self):
+        try:
+            body = json.loads(self.request.body or b'{}')
+        except ValueError:
+            self.set_status(400)
+            self.write({'ok': False, 'error': 'invalid JSON'})
+            return
+        PLAY_ALONG['enabled'] = bool(body.get('enabled'))
+        logging.info('play-along mode: %s', PLAY_ALONG['enabled'])
+        self.write({'enabled': PLAY_ALONG['enabled']})
+
+
+class ApiPlayAlongPlayHandler(BaseHandler):
+    def post(self, gig_id, track_idx):
+        paths = get_track_paths(gig_id, track_idx)
+        if paths is None:
+            self.send_error(404)
+            return
+        track = paths['play_along']
+        if not track:
+            self.set_status(400)
+            self.write({'ok': False, 'error': 'no play-along track for this song'})
+            return
+
+        def start():
+            state, current = mpd_client.state_and_file()
+            if current == track and state == 'pause':
+                mpd_client.resume()
+            elif current == track and state == 'play':
+                return
+            else:
+                mpd_client.play_track(track)
+
+        self.mpd_result(start)
+
+
+class ApiMpdActionHandler(BaseHandler):
+    def post(self, action):
+        call = MPD_ACTIONS.get(action)
+        if call is None:
+            self.send_error(404)
+            return
+        self.mpd_result(call)
 
 
 def make_app():
@@ -108,6 +189,9 @@ def make_app():
         (r'/gig/([^/]+)$', LiveViewHandler),
         (r'/chart/([^/]+)/(\d+)$', ChartRenderHandler),
         (r'/api/load-snapshot/([^/]+)/([^/]+)$', ApiLoadSnapshotHandler),
+        (r'/api/play-along$', ApiPlayAlongModeHandler),
+        (r'/api/play-along/play/([^/]+)/(\d+)$', ApiPlayAlongPlayHandler),
+        (r'/api/mpd/(pause|stop|begin|back|forward)$', ApiMpdActionHandler),
         (r'/static/(.*)$', tornado.web.StaticFileHandler, {'path': STATIC_DIR}),
     ], **settings)
 

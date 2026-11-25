@@ -4,6 +4,10 @@
 <div class="container">
     <header class="header">
         <h1>Live Sessions</h1>
+        <button type="button" id="play-along-toggle" class="play-along-toggle{% if play_along_mode %} on{% end %}"
+                aria-pressed="{{ 'true' if play_along_mode else 'false' }}">
+            Play along: {{ 'ON' if play_along_mode else 'OFF' }}
+        </button>
     </header>
     <div class="gig-list">
         {% if gigs %}
@@ -30,6 +34,22 @@
 {% end %}
 {% block script %}
 <script>
+    var toggle = document.getElementById('play-along-toggle');
+    toggle.addEventListener('click', function() {
+        var enable = toggle.getAttribute('aria-pressed') !== 'true';
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/play-along', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function() {
+            if (xhr.status !== 200) return;
+            var on = JSON.parse(xhr.responseText).enabled;
+            toggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+            toggle.textContent = 'Play along: ' + (on ? 'ON' : 'OFF');
+            toggle.classList.toggle('on', on);
+        };
+        xhr.send(JSON.stringify({enabled: enable}));
+    });
+
     var cards = document.querySelectorAll('.gig-card');
     for (var i = 0; i < cards.length; i++) {
         cards[i].addEventListener('click', function(e) {

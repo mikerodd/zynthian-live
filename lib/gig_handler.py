@@ -116,5 +116,6 @@ def get_track_paths(gig_id: str, track_idx: str) -> dict[str, Any] | None:
         'name': track.get('name', ''),
         'notes': track.get('notes', ''),
         'status': track.get('status'),
+        'play_along': track.get('play_along') or None,
         'input_devices': gig.get('input_devices', []),
     }

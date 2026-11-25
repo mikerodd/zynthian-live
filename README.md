@@ -73,6 +73,32 @@ overridden with `ZYNTHIAN_MY_DATA_DIR`. The gig list and track list use
 generate their HTML, SVG, and section order at request time. Keyboard split
 data is also read from the `.zss` snapshot selected by the gig.
 
+## Play along (MPD)
+
+The gig page header has a **Play along** switch. When it is on, each track
+that has a `play_along` field shows transport buttons (play, pause, stop,
+begin, -10 s, +10 s) on its chart page. The field names a file in the MPD
+music folder, relative to its `music_directory`:
+
+```json
+{
+  "name": "Quelque chose en nous de Tenessee",
+  "json_filename": "tracks/quelque-chose-en-nous-de-tenessee.json",
+  "play_along": "tenessee.flac"
+}
+```
+
+Tracks without `play_along` show the buttons greyed out. Nothing starts
+automatically: playback begins when the Play button is tapped.
+
+The server reaches MPD over TCP using these variables:
+
+- `ZYNTHIAN_MPD_HOST` (default `localhost`)
+- `ZYNTHIAN_MPD_PORT` (default `6600`)
+
+MPD must accept connections from the Zynthian (`bind_to_address` set to a
+LAN address, and the port open in the firewall). There is no password support.
+
 ## Track inheritance
 
 Songs that share a verse, chorus, or structure can inherit it instead of
