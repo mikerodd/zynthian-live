@@ -324,13 +324,42 @@ def _build_track_table_html(track_data: dict[str, Any]) -> str:
     return '\n'.join(parts)
 
 
-def _build_page(title: str, notes: str, gig_id: Any, blocks: list[tuple[str, str]]) -> str:
+def build_play_along_html(gig_id: Any, track_idx: Any, play_along: str | None) -> str:
+    """Return the play-along transport controls for the top bar.
+
+    Without a ``play_along`` file every control is disabled, so the bar still
+    shows what it would do.
+    """
+    disabled = '' if play_along else ' disabled'
+    buttons = [
+        ('play', '&#9654; Play'),
+        ('pause', '&#10074;&#10074; Pause'),
+        ('stop', '&#9632; Stop'),
+        ('begin', '&#9198; Begin'),
+        ('back', '&minus;10 s'),
+        ('forward', '+10 s'),
+    ]
+    parts = ['<div class="play-along-bar" data-gig-id="{}" data-track-idx="{}">'.format(
+        html_mod.escape(str(gig_id)), html_mod.escape(str(track_idx)))]
+    for action, label in buttons:
+        parts.append(
+            '  <button type="button" class="pa-btn" data-action="{}"{}>{}</button>'.format(
+                action, disabled, label))
+    status = '' if play_along else 'No play-along track for this song'
+    parts.append('  <span class="pa-status" aria-live="polite">{}</span>'.format(status))
+    parts.append('</div>')
+    return '\n'.join(parts)
+
+
+def _build_page(title: str, notes: str, gig_id: Any, blocks: list[tuple[str, str]],
+                controls_html: str = '') -> str:
     """Assemble the chart page body (nav bar + sections)."""
     back_url = '/gig/{}'.format(html_mod.escape(str(gig_id)))
+    extra = ' with-controls' if controls_html else ''
 
     body_parts = []
     # Nav bar
-    body_parts.append('<div class="chart-nav">')
+    body_parts.append('<div class="chart-nav{}">'.format(extra))
     body_parts.append('  <a href="{}">&#8592;</a>'.format(back_url))
     body_parts.append(
         '  <span class="nav-title">{}</span>'.format(
@@ -340,10 +369,12 @@ def _build_page(title: str, notes: str, gig_id: Any, blocks: list[tuple[str, str
             '  <span class="nav-notes">{}</span>'.format(
                 html_mod.escape(notes)))
     body_parts.append('  <div class="nav-spacer"></div>')
+    if controls_html:
+        body_parts.append(controls_html)
     body_parts.append('</div>')
 
     # Chart body
-    body_parts.append('<div class="chart-body">')
+    body_parts.append('<div class="chart-body{}">'.format(extra))
     for name, html in blocks:
         if name == 'split':
             body_parts.append('<div class="split-container">')
@@ -365,7 +396,8 @@ def _build_page(title: str, notes: str, gig_id: Any, blocks: list[tuple[str, str
 def render_chart(gig_id: Any, track_json_path: str,
                  zss_path: str | None = None, zs3_id: str | None = None,
                  title: str = '', notes: str = '',
-                 input_devices: list[dict[str, Any]] | None = None) -> str:
+                 input_devices: list[dict[str, Any]] | None = None,
+                 controls_html: str = '') -> str:
     """Render a chart page body and return it as an HTML fragment.
 
     Parameters
@@ -400,6 +432,7 @@ def render_chart(gig_id: Any, track_json_path: str,
         notes=notes,
         gig_id=gig_id,
         blocks=blocks,
+        controls_html=controls_html,
     )
 
 

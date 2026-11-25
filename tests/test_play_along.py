@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tests for the play-along endpoints and the play-along page controls."""
+"""Tests for the play-along endpoints and the play-along controls in the top bar."""
 
 import json
 import sys
@@ -15,6 +15,7 @@ from tornado.template import Loader
 from tornado.testing import AsyncHTTPTestCase
 
 import live_session_server
+import track_renderer
 from mpd_client import MpdError
 
 TRACK = {'name': 'Tenessee', 'play_along': 'tenessee.flac', 'json_path': None,
@@ -88,14 +89,9 @@ class PlayAlongApiTests(AsyncHTTPTestCase):
         self.assertEqual(404, response.code)
 
     def test_transport_actions_call_the_matching_command(self):
-        cases = {
-            'pause': 'pause',
-            'stop': 'stop',
-            'begin': 'begin',
-        }
-        for action, name in cases.items():
+        for action in ('pause', 'stop', 'begin'):
             with self.subTest(action=action), \
-                 mock.patch.object(live_session_server.mpd_client, name) as call:
+                 mock.patch.object(live_session_server.mpd_client, action) as call:
                 response = self.post_json('/api/mpd/' + action, {})
                 self.assertEqual(200, response.code)
                 call.assert_called_once_with()
@@ -124,32 +120,57 @@ class PlayAlongApiTests(AsyncHTTPTestCase):
         self.assertEqual(503, response.code)
         self.assertEqual('MPD unreachable', json.loads(response.body)['error'])
 
+    def test_chart_page_gets_controls_only_when_mode_is_on(self):
+        with mock.patch.object(live_session_server, 'get_track_paths', return_value=TRACK), \
+             mock.patch.object(live_session_server, 'load_zs3'), \
+             mock.patch.object(live_session_server, 'render_chart',
+                               return_value='<div class="chart-nav"></div>') as render:
+            self.fetch('/chart/0/1')
+            self.assertEqual('', render.call_args.kwargs['controls_html'])
 
-class PlayAlongTemplateTests(unittest.TestCase):
+            self.post_json('/api/play-along', {'enabled': True})
+            self.fetch('/chart/0/1')
+            controls = render.call_args.kwargs['controls_html']
+        self.assertIn('play-along-bar', controls)
+        self.assertIn('data-track-idx="1"', controls)
+
+
+class PlayAlongControlsTests(unittest.TestCase):
     def setUp(self):
         self.loader = Loader(str(ROOT / 'templates'))
 
-    def render_chart(self, **kwargs):
-        values = dict(title='Tenessee', chart_body='', gig_id='0', track_idx='1',
-                      play_along='tenessee.flac', play_along_mode=True)
-        values.update(kwargs)
-        return self.loader.load('chart.html').generate(**values).decode('utf-8')
-
-    def test_bar_is_hidden_when_mode_is_off(self):
-        html = self.render_chart(play_along_mode=False)
-        self.assertNotIn('play-along-bar', html)
-
     def test_buttons_are_enabled_when_track_has_play_along(self):
-        html = self.render_chart()
-        self.assertIn('data-action="play"', html)
-        self.assertNotIn('disabled', html.split('data-action="play"')[1].split('>')[0])
+        html = track_renderer.build_play_along_html(0, 1, 'tenessee.flac')
+        self.assertEqual(6, html.count('data-action='))
+        self.assertNotIn('disabled', html)
+        self.assertIn('class="pa-btn" data-action="play">', html)
 
     def test_buttons_are_disabled_without_play_along_field(self):
-        html = self.render_chart(play_along=None)
-        self.assertIn('play-along-bar', html)
-        self.assertEqual(6, html.count('data-action='))
+        html = track_renderer.build_play_along_html(0, 1, None)
         self.assertEqual(6, html.count('disabled>'))
         self.assertIn('No play-along track for this song', html)
+
+    def test_controls_are_placed_in_the_top_bar(self):
+        controls = track_renderer.build_play_along_html(0, 1, 'tenessee.flac')
+        html = track_renderer._build_page(
+            title='Tenessee', notes='', gig_id=0, blocks=[],
+            controls_html=controls)
+        nav = html.split('<div class="chart-body')[0]
+        self.assertIn('class="chart-nav with-controls"', nav)
+        self.assertIn('play-along-bar', nav)
+
+    def test_top_bar_is_unchanged_without_controls(self):
+        html = track_renderer._build_page(
+            title='Tenessee', notes='', gig_id=0, blocks=[])
+        self.assertIn('<div class="chart-nav">', html)
+        self.assertNotIn('play-along-bar', html)
+
+    def test_chart_script_is_only_included_when_mode_is_on(self):
+        def render(on):
+            return self.loader.load('chart.html').generate(
+                title='T', chart_body='', play_along_mode=on).decode('utf-8')
+        self.assertIn("querySelector('.play-along-bar')", render(True))
+        self.assertNotIn("querySelector('.play-along-bar')", render(False))
 
     def test_gig_page_toggle_reflects_mode(self):
         gigs = []

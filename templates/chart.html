@@ -1,26 +1,16 @@
 {% extends "base.html" %}
 {% block title %}{{ title }} - Zynthian Live Session{% end %}
 {% block content %}
-<div class="container{% if play_along_mode %} with-play-along{% end %}">
+<div class="container">
     {% raw chart_body %}
 </div>
-{% if play_along_mode %}
-<div class="play-along-bar" data-gig-id="{{ gig_id }}" data-track-idx="{{ track_idx }}">
-    <button type="button" class="pa-btn" data-action="play" {% if not play_along %}disabled{% end %}>&#9654; Play</button>
-    <button type="button" class="pa-btn" data-action="pause" {% if not play_along %}disabled{% end %}>&#10074;&#10074; Pause</button>
-    <button type="button" class="pa-btn" data-action="stop" {% if not play_along %}disabled{% end %}>&#9632; Stop</button>
-    <button type="button" class="pa-btn" data-action="begin" {% if not play_along %}disabled{% end %}>&#9198; Begin</button>
-    <button type="button" class="pa-btn" data-action="back" {% if not play_along %}disabled{% end %}>&minus;10 s</button>
-    <button type="button" class="pa-btn" data-action="forward" {% if not play_along %}disabled{% end %}>+10 s</button>
-    <span class="pa-status" aria-live="polite">{% if not play_along %}No play-along track for this song{% end %}</span>
-</div>
-{% end %}
 {% end %}
 {% block script %}
 {% if play_along_mode %}
 <script>
     (function() {
         var bar = document.querySelector('.play-along-bar');
+        if (!bar) return;
         var status = bar.querySelector('.pa-status');
         var gig = bar.getAttribute('data-gig-id');
         var track = bar.getAttribute('data-track-idx');

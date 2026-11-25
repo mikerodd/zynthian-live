@@ -11,7 +11,7 @@ import tornado.web
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from zs3_handler import init_osc, load_snapshot, load_zs3
 from gig_handler import list_gigs, load_gig, get_track_paths
-from track_renderer import render_chart
+from track_renderer import render_chart, build_play_along_html
 import mpd_client
 from mpd_client import SEEK_STEP
 
@@ -81,6 +81,9 @@ class ChartRenderHandler(BaseHandler):
         zs3_id = paths['zs3_id']
         if zs3_id:
             load_zs3(zs3_id)
+        controls_html = ''
+        if PLAY_ALONG['enabled']:
+            controls_html = build_play_along_html(gig_id, track_idx, paths['play_along'])
         try:
             chart_body = render_chart(
                 gig_id=gig_id,
@@ -90,6 +93,7 @@ class ChartRenderHandler(BaseHandler):
                 title=paths['name'],
                 notes=paths['notes'],
                 input_devices=paths['input_devices'],
+                controls_html=controls_html,
             )
         except ValueError as e:
             # includes json.JSONDecodeError: a malformed track file, which
@@ -110,8 +114,6 @@ class ChartRenderHandler(BaseHandler):
             self.send_error(500)
             return
         self.render('chart.html', title=paths['name'], chart_body=chart_body,
-                    gig_id=gig_id, track_idx=track_idx,
-                    play_along=paths['play_along'],
                     play_along_mode=PLAY_ALONG['enabled'])
 
 
