@@ -143,7 +143,8 @@ class PlayAlongControlsTests(unittest.TestCase):
         html = track_renderer.build_play_along_html(0, 1, 'tenessee.flac')
         self.assertEqual(6, html.count('data-action='))
         self.assertNotIn('disabled', html)
-        self.assertIn('class="pa-btn" data-action="play">', html)
+        self.assertIn('class="pa-btn" data-action="play" title="Play"', html)
+        self.assertNotIn('>Play<', html)
 
     def test_buttons_are_disabled_without_play_along_field(self):
         html = track_renderer.build_play_along_html(0, 1, None)

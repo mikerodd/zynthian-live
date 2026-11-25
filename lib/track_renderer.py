@@ -332,19 +332,19 @@ def build_play_along_html(gig_id: Any, track_idx: Any, play_along: str | None) -
     """
     disabled = '' if play_along else ' disabled'
     buttons = [
-        ('play', '&#9654; Play'),
-        ('pause', '&#10074;&#10074; Pause'),
-        ('stop', '&#9632; Stop'),
-        ('begin', '&#9198; Begin'),
-        ('back', '&minus;10 s'),
-        ('forward', '+10 s'),
+        ('play', 'Play', '&#9654;'),
+        ('pause', 'Pause', '&#10074;&#10074;'),
+        ('stop', 'Stop', '&#9632;'),
+        ('begin', 'Begin', '&#9198;'),
+        ('back', 'Back 10 seconds', '&minus;10'),
+        ('forward', 'Forward 10 seconds', '+10'),
     ]
     parts = ['<div class="play-along-bar" data-gig-id="{}" data-track-idx="{}">'.format(
         html_mod.escape(str(gig_id)), html_mod.escape(str(track_idx)))]
-    for action, label in buttons:
+    for action, name, symbol in buttons:
         parts.append(
-            '  <button type="button" class="pa-btn" data-action="{}"{}>{}</button>'.format(
-                action, disabled, label))
+            '  <button type="button" class="pa-btn" data-action="{}" title="{}" aria-label="{}"{}>{}</button>'.format(
+                action, name, name, disabled, symbol))
     status = '' if play_along else 'No play-along track for this song'
     parts.append('  <span class="pa-status" aria-live="polite">{}</span>'.format(status))
     parts.append('</div>')
