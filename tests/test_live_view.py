@@ -35,7 +35,7 @@ class LiveViewStatusTests(unittest.TestCase):
         ]
         html = self.render(tracks)
         self.assertIn(
-            '<span class="track-number" style="background-color: grey;">1</span>',
+            '<span class="track-number" style="background-color: #BBBBBB;">1</span>',
             html)
         self.assertIn(
             '<span class="track-number" style="background-color: pink;">2</span>',
