@@ -12,8 +12,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from zs3_handler import init_osc, load_snapshot, load_zs3
 from gig_handler import list_gigs, load_gig, get_track_paths
 from track_renderer import render_chart, build_play_along_html
-import mpd_client
-from mpd_client import SEEK_STEP
+import spaph_client
 
 logging.basicConfig(format='%(levelname)s:%(module)s: %(message)s',
                     stream=sys.stderr, level=logging.INFO)
@@ -26,13 +25,21 @@ TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'templates')
 # Play-along mode is a single server-side switch shared by every device.
 PLAY_ALONG = {'enabled': False}
 
-MPD_ACTIONS = {
-    'pause': lambda: mpd_client.pause(),
-    'stop': lambda: mpd_client.stop(),
-    'begin': lambda: mpd_client.begin(),
-    'back': lambda: mpd_client.seek(-SEEK_STEP),
-    'forward': lambda: mpd_client.seek(SEEK_STEP),
+# Transport commands for the backing track, as spaph console commands.
+SEEK_STEP_SECONDS = 10
+VOLUME_STEP_DB = 2
+BACKING_COMMANDS = {
+    'pause': 'backing pause',
+    'stop': 'backing stop',
+    'begin': 'backing begin',
+    'back': 'backing seek -{}'.format(SEEK_STEP_SECONDS),
+    'forward': 'backing seek +{}'.format(SEEK_STEP_SECONDS),
+    'volume-down': 'backing volume -{}'.format(VOLUME_STEP_DB),
+    'volume-up': 'backing volume +{}'.format(VOLUME_STEP_DB),
 }
+# The file spaph has loaded for play-along. spaph does not report back, so this is what
+# the server last asked for; a Play for a different file loads it first.
+BACKING = {'file': None}
 
 
 class BaseHandler(tornado.web.RequestHandler):
@@ -42,16 +49,13 @@ class BaseHandler(tornado.web.RequestHandler):
     def get_template_path(self):
         return TEMPLATE_DIR
 
-    def mpd_result(self, call):
+    def spaph_result(self, call):
         try:
             call()
-        except mpd_client.MpdError as e:
-            self.set_status(409)
-            self.write({'ok': False, 'error': str(e)})
         except OSError as e:
-            logging.error('MPD request failed: %s', e)
+            logging.error('spaph request failed: %s', e)
             self.set_status(503)
-            self.write({'ok': False, 'error': 'MPD unreachable'})
+            self.write({'ok': False, 'error': 'spaph unreachable'})
         else:
             self.write({'ok': True})
 
@@ -157,24 +161,21 @@ class ApiPlayAlongPlayHandler(BaseHandler):
             return
 
         def start():
-            state, current = mpd_client.state_and_file()
-            if current == track and state == 'pause':
-                mpd_client.resume()
-            elif current == track and state == 'play':
-                return
-            else:
-                mpd_client.play_track(track)
+            if BACKING['file'] != track:
+                spaph_client.command('backing load ' + track)
+                BACKING['file'] = track
+            spaph_client.command('backing play')
 
-        self.mpd_result(start)
+        self.spaph_result(start)
 
 
-class ApiMpdActionHandler(BaseHandler):
+class ApiBackingActionHandler(BaseHandler):
     def post(self, action):
-        call = MPD_ACTIONS.get(action)
-        if call is None:
+        command = BACKING_COMMANDS.get(action)
+        if command is None:
             self.send_error(404)
             return
-        self.mpd_result(call)
+        self.spaph_result(lambda: spaph_client.command(command))
 
 
 def make_app():
@@ -193,7 +194,7 @@ def make_app():
         (r'/api/load-snapshot/([^/]+)/([^/]+)$', ApiLoadSnapshotHandler),
         (r'/api/play-along$', ApiPlayAlongModeHandler),
         (r'/api/play-along/play/([^/]+)/(\d+)$', ApiPlayAlongPlayHandler),
-        (r'/api/mpd/(pause|stop|begin|back|forward)$', ApiMpdActionHandler),
+        (r'/api/backing/(pause|stop|begin|back|forward|volume-down|volume-up)$', ApiBackingActionHandler),
         (r'/static/(.*)$', tornado.web.StaticFileHandler, {'path': STATIC_DIR}),
     ], **settings)
 

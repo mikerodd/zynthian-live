@@ -26,9 +26,9 @@ fi
 # Default port
 export LIVE_SESSION_PORT="${LIVE_SESSION_PORT:-8080}"
 
-# MPD server for play-along (winthian on the LAN)
-export ZYNTHIAN_MPD_HOST="${ZYNTHIAN_MPD_HOST:-winthian.local}"
-export ZYNTHIAN_MPD_PORT="${ZYNTHIAN_MPD_PORT:-6600}"
+# spaph on winthian (the LAN mini PC) runs the backing track and listens for OSC
+export ZYNTHIAN_SPAPH_HOST="${ZYNTHIAN_SPAPH_HOST:-winthian.local}"
+export ZYNTHIAN_SPAPH_PORT="${ZYNTHIAN_SPAPH_PORT:-9000}"
 
 cd "$SCRIPT_DIR"
 exec ./live_session_server.py

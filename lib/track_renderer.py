@@ -338,6 +338,8 @@ def build_play_along_html(gig_id: Any, track_idx: Any, play_along: str | None) -
         ('begin', 'Begin', '&#9198;'),
         ('back', 'Back 10 seconds', '&minus;10'),
         ('forward', 'Forward 10 seconds', '+10'),
+        ('volume-down', 'Volume down', '&#128265;&minus;'),
+        ('volume-up', 'Volume up', '&#128266;+'),
     ]
     parts = ['<div class="play-along-bar" data-gig-id="{}" data-track-idx="{}">'.format(
         html_mod.escape(str(gig_id)), html_mod.escape(str(track_idx)))]

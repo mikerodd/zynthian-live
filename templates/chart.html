@@ -26,7 +26,7 @@
                 try { error = JSON.parse(xhr.responseText).error || ''; } catch (e) {}
                 status.textContent = error || 'Request failed';
             };
-            xhr.onerror = function() { status.textContent = 'MPD unreachable'; };
+            xhr.onerror = function() { status.textContent = 'spaph unreachable'; };
             xhr.send('{}');
         }
 
@@ -37,7 +37,7 @@
             if (action === 'play') {
                 post('/api/play-along/play/' + gig + '/' + track);
             } else {
-                post('/api/mpd/' + action);
+                post('/api/backing/' + action);
             }
         });
     })();

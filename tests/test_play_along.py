@@ -16,7 +16,6 @@ from tornado.testing import AsyncHTTPTestCase
 
 import live_session_server
 import track_renderer
-from mpd_client import MpdError
 
 TRACK = {'name': 'Tenessee', 'play_along': 'tenessee.flac', 'json_path': None,
          'snapshot_path': None, 'zs3_id': None, 'notes': '', 'input_devices': []}
@@ -30,9 +29,16 @@ class PlayAlongApiTests(AsyncHTTPTestCase):
     def setUp(self):
         super().setUp()
         live_session_server.PLAY_ALONG['enabled'] = False
+        live_session_server.BACKING['file'] = None
+        self.sent = []
+        patcher = mock.patch.object(live_session_server.spaph_client, 'command',
+                                    side_effect=self.sent.append)
+        self.command = patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self):
         live_session_server.PLAY_ALONG['enabled'] = False
+        live_session_server.BACKING['file'] = None
         super().tearDown()
 
     def post_json(self, path, body):
@@ -47,78 +53,64 @@ class PlayAlongApiTests(AsyncHTTPTestCase):
         response = self.fetch('/api/play-along', method='POST', body='{not json')
         self.assertEqual(400, response.code)
 
-    def test_play_starts_the_track_when_stopped(self):
-        with mock.patch.object(live_session_server, 'get_track_paths', return_value=TRACK), \
-             mock.patch.object(live_session_server.mpd_client, 'state_and_file',
-                               return_value=('stop', None)), \
-             mock.patch.object(live_session_server.mpd_client, 'play_track') as play:
+    def test_first_play_loads_the_track_then_plays(self):
+        with mock.patch.object(live_session_server, 'get_track_paths', return_value=TRACK):
             response = self.post_json('/api/play-along/play/0/1', {})
         self.assertEqual(200, response.code)
-        play.assert_called_once_with('tenessee.flac')
+        self.assertEqual(['backing load tenessee.flac', 'backing play'], self.sent)
 
-    def test_play_resumes_when_this_track_is_paused(self):
-        with mock.patch.object(live_session_server, 'get_track_paths', return_value=TRACK), \
-             mock.patch.object(live_session_server.mpd_client, 'state_and_file',
-                               return_value=('pause', 'tenessee.flac')), \
-             mock.patch.object(live_session_server.mpd_client, 'resume') as resume, \
-             mock.patch.object(live_session_server.mpd_client, 'play_track') as play:
+    def test_play_of_the_loaded_track_does_not_reload_it(self):
+        live_session_server.BACKING['file'] = 'tenessee.flac'
+        with mock.patch.object(live_session_server, 'get_track_paths', return_value=TRACK):
             self.post_json('/api/play-along/play/0/1', {})
-        resume.assert_called_once_with()
-        play.assert_not_called()
+        self.assertEqual(['backing play'], self.sent)
 
-    def test_play_leaves_a_track_that_is_already_playing(self):
-        with mock.patch.object(live_session_server, 'get_track_paths', return_value=TRACK), \
-             mock.patch.object(live_session_server.mpd_client, 'state_and_file',
-                               return_value=('play', 'tenessee.flac')), \
-             mock.patch.object(live_session_server.mpd_client, 'play_track') as play:
-            response = self.post_json('/api/play-along/play/0/1', {})
-        self.assertEqual(200, response.code)
-        play.assert_not_called()
+    def test_play_of_another_track_loads_it(self):
+        live_session_server.BACKING['file'] = 'other.flac'
+        with mock.patch.object(live_session_server, 'get_track_paths', return_value=TRACK):
+            self.post_json('/api/play-along/play/0/1', {})
+        self.assertEqual(['backing load tenessee.flac', 'backing play'], self.sent)
 
     def test_play_without_play_along_field_is_rejected(self):
         with mock.patch.object(live_session_server, 'get_track_paths',
-                               return_value=NO_PLAY_ALONG), \
-             mock.patch.object(live_session_server.mpd_client, 'play_track') as play:
+                               return_value=NO_PLAY_ALONG):
             response = self.post_json('/api/play-along/play/0/1', {})
         self.assertEqual(400, response.code)
-        play.assert_not_called()
+        self.assertEqual([], self.sent)
 
     def test_play_unknown_track_is_not_found(self):
         with mock.patch.object(live_session_server, 'get_track_paths', return_value=None):
             response = self.post_json('/api/play-along/play/9/9', {})
         self.assertEqual(404, response.code)
+        self.assertEqual([], self.sent)
 
-    def test_transport_actions_call_the_matching_command(self):
-        for action in ('pause', 'stop', 'begin'):
-            with self.subTest(action=action), \
-                 mock.patch.object(live_session_server.mpd_client, action) as call:
-                response = self.post_json('/api/mpd/' + action, {})
+    def test_transport_actions_send_the_matching_spaph_command(self):
+        cases = {
+            'pause': 'backing pause',
+            'stop': 'backing stop',
+            'begin': 'backing begin',
+            'back': 'backing seek -10',
+            'forward': 'backing seek +10',
+            'volume-down': 'backing volume -2',
+            'volume-up': 'backing volume +2',
+        }
+        for action, command in cases.items():
+            with self.subTest(action=action):
+                self.sent.clear()
+                response = self.post_json('/api/backing/' + action, {})
                 self.assertEqual(200, response.code)
-                call.assert_called_once_with()
-
-    def test_back_and_forward_seek_by_the_step(self):
-        with mock.patch.object(live_session_server.mpd_client, 'seek') as seek:
-            self.post_json('/api/mpd/back', {})
-            self.post_json('/api/mpd/forward', {})
-        self.assertEqual([mock.call(-10), mock.call(10)], seek.call_args_list)
+                self.assertEqual([command], self.sent)
 
     def test_unknown_transport_action_is_not_found(self):
-        response = self.post_json('/api/mpd/rewind', {})
+        response = self.post_json('/api/backing/rewind', {})
         self.assertEqual(404, response.code)
+        self.assertEqual([], self.sent)
 
-    def test_mpd_ack_is_a_conflict(self):
-        with mock.patch.object(live_session_server.mpd_client, 'pause',
-                               side_effect=MpdError('ACK [50@0] Not playing')):
-            response = self.post_json('/api/mpd/pause', {})
-        self.assertEqual(409, response.code)
-        self.assertIn('Not playing', json.loads(response.body)['error'])
-
-    def test_unreachable_mpd_is_service_unavailable(self):
-        with mock.patch.object(live_session_server.mpd_client, 'pause',
-                               side_effect=OSError('refused')):
-            response = self.post_json('/api/mpd/pause', {})
+    def test_unreachable_spaph_is_service_unavailable(self):
+        self.command.side_effect = OSError('no route to host')
+        response = self.post_json('/api/backing/pause', {})
         self.assertEqual(503, response.code)
-        self.assertEqual('MPD unreachable', json.loads(response.body)['error'])
+        self.assertEqual('spaph unreachable', json.loads(response.body)['error'])
 
     def test_chart_page_gets_controls_only_when_mode_is_on(self):
         with mock.patch.object(live_session_server, 'get_track_paths', return_value=TRACK), \
@@ -141,14 +133,19 @@ class PlayAlongControlsTests(unittest.TestCase):
 
     def test_buttons_are_enabled_when_track_has_play_along(self):
         html = track_renderer.build_play_along_html(0, 1, 'tenessee.flac')
-        self.assertEqual(6, html.count('data-action='))
+        self.assertEqual(8, html.count('data-action='))
         self.assertNotIn('disabled', html)
         self.assertIn('class="pa-btn" data-action="play" title="Play"', html)
         self.assertNotIn('>Play<', html)
 
+    def test_volume_buttons_are_in_the_bar(self):
+        html = track_renderer.build_play_along_html(0, 1, 'tenessee.flac')
+        self.assertIn('data-action="volume-down"', html)
+        self.assertIn('data-action="volume-up"', html)
+
     def test_buttons_are_disabled_without_play_along_field(self):
         html = track_renderer.build_play_along_html(0, 1, None)
-        self.assertEqual(6, html.count('disabled>'))
+        self.assertEqual(8, html.count('disabled>'))
         self.assertIn('No play-along track for this song', html)
 
     def test_controls_are_placed_in_the_top_bar(self):
@@ -171,6 +168,7 @@ class PlayAlongControlsTests(unittest.TestCase):
             return self.loader.load('chart.html').generate(
                 title='T', chart_body='', play_along_mode=on).decode('utf-8')
         self.assertIn("querySelector('.play-along-bar')", render(True))
+        self.assertIn('/api/backing/', render(True))
         self.assertNotIn("querySelector('.play-along-bar')", render(False))
 
     def test_gig_page_toggle_reflects_mode(self):

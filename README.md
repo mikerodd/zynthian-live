@@ -73,12 +73,12 @@ overridden with `ZYNTHIAN_MY_DATA_DIR`. The gig list and track list use
 generate their HTML, SVG, and section order at request time. Keyboard split
 data is also read from the `.zss` snapshot selected by the gig.
 
-## Play along (MPD)
+## Play along (spaph)
 
 The gig page header has a **Play along** switch. When it is on, each track
-that has a `play_along` field shows transport buttons (play, pause, stop,
-begin, -10 s, +10 s) on its chart page. The field names a file in the MPD
-music folder, relative to its `music_directory`:
+that has a `play_along` field shows transport buttons on its chart page:
+play, pause, stop, begin, -10 s, +10 s, and volume down and up. The field
+names a stereo file in spaph's `backing_dir`:
 
 ```json
 {
@@ -89,15 +89,17 @@ music folder, relative to its `music_directory`:
 ```
 
 Tracks without `play_along` show the buttons greyed out. Nothing starts
-automatically: playback begins when the Play button is tapped.
+automatically: playback begins when the Play button is tapped. The first
+Play for a file loads it; later presses only start it.
 
-The server reaches MPD over TCP using these variables:
+The server sends commands to spaph over OSC (`/spaph/command`, the same text
+the spaph console accepts), using these variables:
 
-- `ZYNTHIAN_MPD_HOST` (default `localhost`)
-- `ZYNTHIAN_MPD_PORT` (default `6600`)
+- `ZYNTHIAN_SPAPH_HOST` (default `winthian.local`)
+- `ZYNTHIAN_SPAPH_PORT` (default `9000`)
 
-MPD must accept connections from the Zynthian (`bind_to_address` set to a
-LAN address, and the port open in the firewall). There is no password support.
+spaph does not report back yet, so a missing file or a failed command is
+logged by spaph, not shown on the chart page.
 
 ## Track inheritance
 
