@@ -52,7 +52,6 @@ class ChartRenderHandler(BaseHandler):
         zs3_id = paths['zs3_id']
         if zs3_id:
             load_zs3(zs3_id)
-        semitones = int(self.get_argument('transpose', '0'))
         try:
             chart_body = render_chart(
                 gig_id=gig_id,
@@ -61,7 +60,6 @@ class ChartRenderHandler(BaseHandler):
                 zs3_id=zs3_id,
                 title=paths['name'],
                 notes=paths['notes'],
-                semitones=semitones,
                 input_devices=paths['input_devices'],
             )
         except ValueError as e:

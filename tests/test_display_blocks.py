@@ -166,14 +166,6 @@ class WebPipelineGoldenTests(GoldenTestCase):
                 self.write_image(root)
                 self.assertGolden(name, self.render(root, track))
 
-    def test_transposition_is_pinned(self):
-        track = full_track(['leadsheet'])
-        for semitones in (-3, 5):
-            with self.subTest(semitones=semitones):
-                root = self.make_data_root()
-                html = self.render(root, track, semitones=semitones)
-                self.assertGolden('web_transpose_{}'.format(semitones), html)
-
     def test_absent_leadsheet_block_is_skipped(self):
         root = self.make_data_root()
         html = self.render(root, {'display': ['leadsheet', 'structure'],

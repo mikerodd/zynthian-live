@@ -229,20 +229,6 @@ body {
     white-space: nowrap;
 }
 .chart-nav .nav-spacer { -webkit-flex: 1; flex: 1; }
-.chart-nav .transpose-btn {
-    display: -webkit-inline-box; display: -webkit-inline-flex;
-    display: inline-flex;
-    -webkit-align-items: center; align-items: center;
-    -webkit-justify-content: center; justify-content: center;
-    width: 44px; height: 44px; font-size: 22px; font-weight: 700;
-    color: #333; text-decoration: none; border-radius: 8px;
-    background: #ddd; border: none; cursor: pointer;
-    margin-left: 6px;
-}
-.chart-nav .transpose-btn:active { background: #ccc; }
-.chart-nav .transpose-val {
-    color: #555; font-size: 14px; min-width: 30px; text-align: center;
-}
 .chart-body {
     padding: 70px 16px 24px;
 }

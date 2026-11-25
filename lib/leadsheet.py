@@ -1,94 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Parse leadsheet data from JSON and transpose chords.
+"""Parse leadsheet data from JSON.
 
-Ported from leadsheet-generator/generator.js — only the parsing and
-transposition logic; no rendering.
+Ported from leadsheet-generator/generator.js — only the parsing logic; no
+rendering.
 """
 
 import re
 
 # ── constants ──────────────────────────────────────────────────────────
 
-SHARP_SCALE = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-FLAT_SCALE  = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
-
-NOTE_VALUES = {
-    'C': 0, 'B#': 0,
-    'C#': 1, 'Db': 1,
-    'D': 2,
-    'D#': 3, 'Eb': 3,
-    'E': 4, 'Fb': 4,
-    'F': 5, 'E#': 5,
-    'F#': 6, 'Gb': 6,
-    'G': 7,
-    'G#': 8, 'Ab': 8,
-    'A': 9,
-    'A#': 10, 'Bb': 10,
-    'B': 11, 'Cb': 11,
-}
-
 BAR_SYMBOLS = {
     '|': 'single', '||': 'double', '|||': 'final',
     '>|': 'end', '}': 'end', '|<': 'start-repeat',
     '>|<': 'end-start-repeat',
 }
-
-_PAT_CHORD = re.compile(r'^([A-G][#b]?)(.*)')
-_PAT_NOTE  = re.compile(r'^([A-G])([#b]?)')
-
-
-# ── transposition ──────────────────────────────────────────────────────
-
-def transpose_note(note_str, semitones):
-    m = _PAT_NOTE.match(note_str)
-    if not m:
-        return note_str
-    name, accidental = m.group(1), m.group(2)
-    key = name + accidental
-    if key not in NOTE_VALUES:
-        return note_str
-    new_idx = (NOTE_VALUES[key] + semitones % 12 + 12) % 12
-    if semitones > 0:
-        return SHARP_SCALE[new_idx]
-    elif semitones < 0:
-        return FLAT_SCALE[new_idx]
-    return key
-
-
-def transpose_chord(chord, semitones):
-    trimmed = (chord or '').strip()
-    if not trimmed or trimmed in ('/', '%', 'N.C.'):
-        return chord
-    parts = trimmed.split('/')
-    main_str = parts[0]
-    bass_str = parts[1] if len(parts) > 1 else None
-    m = _PAT_CHORD.match(main_str)
-    if not m:
-        return chord
-    root, quality = m.group(1), m.group(2)
-    new_root = transpose_note(root, semitones)
-    result = new_root + quality
-    if bass_str:
-        result += '/' + transpose_note(bass_str, semitones)
-    return result
-
-
-def transpose_sheet(sheet, semitones):
-    if semitones == 0:
-        return sheet
-    out = dict(sheet)
-    out['lines'] = []
-    for line in sheet['lines']:
-        new_line = dict(line)
-        new_line['measures'] = []
-        for measure in line['measures']:
-            new_measure = dict(measure)
-            new_measure['beats'] = [
-                transpose_chord(b, semitones) for b in measure['beats']
-            ]
-            new_line['measures'].append(new_measure)
-        out['lines'].append(new_line)
-    return out
 
 
 # ── chord line parser ──────────────────────────────────────────────────

@@ -15,7 +15,7 @@ import os
 from typing import Any
 from urllib.parse import urlsplit
 
-from leadsheet import parse_leadsheet, transpose_sheet
+from leadsheet import parse_leadsheet
 from track_loader import load_track
 from security import safe_resolve_path
 from zss_parser import collect_skins
@@ -105,10 +105,8 @@ def _barline_html(bar_type: str) -> str:
     return '<div class="ls-barline">{}</div>'.format(_STROKE)
 
 
-def _build_leadsheet_html(sheet: Any, semitones: int) -> str:
+def _build_leadsheet_html(sheet: Any) -> str:
     """Render parsed leadsheet data as an HTML string."""
-    if semitones != 0:
-        sheet = transpose_sheet(sheet, semitones)
     parts = []
     for line in sheet.get('lines', []):
         label = line.get('lineText', '').strip()
@@ -326,9 +324,8 @@ def _build_track_table_html(track_data: dict[str, Any]) -> str:
     return '\n'.join(parts)
 
 
-def _build_page(title: str, notes: str, gig_id: Any, semitones: int, blocks: list[tuple[str, str]]) -> str:
+def _build_page(title: str, notes: str, gig_id: Any, blocks: list[tuple[str, str]]) -> str:
     """Assemble the chart page body (nav bar + sections)."""
-    transpose_label = '{:+d}'.format(semitones) if semitones else '0'
     back_url = '/gig/{}'.format(html_mod.escape(str(gig_id)))
 
     body_parts = []
@@ -343,17 +340,6 @@ def _build_page(title: str, notes: str, gig_id: Any, semitones: int, blocks: lis
             '  <span class="nav-notes">{}</span>'.format(
                 html_mod.escape(notes)))
     body_parts.append('  <div class="nav-spacer"></div>')
-    # Transpose controls
-    t_down = semitones - 1
-    t_up = semitones + 1
-    body_parts.append(
-        '  <a class="transpose-btn" href="?transpose={}">&minus;</a>'.format(
-            t_down))
-    body_parts.append(
-        '  <span class="transpose-val">{}</span>'.format(transpose_label))
-    body_parts.append(
-        '  <a class="transpose-btn" href="?transpose={}">+</a>'.format(
-            t_up))
     body_parts.append('</div>')
 
     # Chart body
@@ -378,7 +364,7 @@ def _build_page(title: str, notes: str, gig_id: Any, semitones: int, blocks: lis
 
 def render_chart(gig_id: Any, track_json_path: str,
                  zss_path: str | None = None, zs3_id: str | None = None,
-                 title: str = '', notes: str = '', semitones: int = 0,
+                 title: str = '', notes: str = '',
                  input_devices: list[dict[str, Any]] | None = None) -> str:
     """Render a chart page body and return it as an HTML fragment.
 
@@ -396,8 +382,6 @@ def render_chart(gig_id: Any, track_json_path: str,
         Track title (from config.json).
     notes : str
         Subtitle / notes text shown in the nav bar.
-    semitones : int
-        Transposition offset in semitones (0 = original key).
     input_devices : list or None
         List of input device dicts with 'midi_chan', 'keys', 'begins'.
     """
@@ -408,19 +392,18 @@ def render_chart(gig_id: Any, track_json_path: str,
 
     blocks = build_display_blocks(
         track_data, track_json_path,
-        semitones=semitones, zss_path=zss_path, zs3_id=zs3_id,
+        zss_path=zss_path, zs3_id=zs3_id,
         input_devices=input_devices)
 
     return _build_page(
         title=title,
         notes=notes,
         gig_id=gig_id,
-        semitones=semitones,
         blocks=blocks,
     )
 
 
-def build_display_blocks(track_data: dict[str, Any], track_json_path: str, semitones: int = 0,
+def build_display_blocks(track_data: dict[str, Any], track_json_path: str,
                          zss_path: str | None = None, zs3_id: str | None = None,
                          input_devices: list[dict[str, Any]] | None = None) -> list[tuple[str, str]]:
     """Render the selected display blocks as a list of ``(name, html)`` pairs.
@@ -441,8 +424,6 @@ def build_display_blocks(track_data: dict[str, Any], track_json_path: str, semit
         Parsed track JSON (display, leadsheet, structure, html, images).
     track_json_path : str
         Path the track was loaded from; images resolve relative to it.
-    semitones : int
-        Transposition applied to the leadsheet.
     zss_path, zs3_id, input_devices
         Snapshot and device config for the ``split`` block; see
         zss_parser.collect_skins().
@@ -455,7 +436,7 @@ def build_display_blocks(track_data: dict[str, Any], track_json_path: str, semit
         if name == 'leadsheet':
             leadsheet_data = track_data.get('leadsheet', [])
             html = (_build_leadsheet_html(
-                        parse_leadsheet(leadsheet_data, time_sig), semitones)
+                        parse_leadsheet(leadsheet_data, time_sig))
                     if leadsheet_data else '')
         elif name == 'split':
             skins = collect_skins(track_data, zss_path, zs3_id, input_devices)

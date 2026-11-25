@@ -112,7 +112,6 @@ class ImageRenderingTests(unittest.TestCase):
             title='Track',
             notes='',
             gig_id=0,
-            semitones=0,
             blocks=[('images', '<div id="images"></div>'),
                     ('structure', '<table id="structure"></table>')],
         )
