@@ -62,7 +62,7 @@ class OSCClient:
         if master_chan is None:
             master_chan = _get_master_chan()
         try:
-            liblo.send(self.addr, '/CUIA/ZYN_CC', master_chan, 0, bank)
+            liblo.send(self.addr, '/CUIA/ZYN_CC', master_chan, _get_bank_cc(), bank)
             import time
             time.sleep(0.05)
             liblo.send(self.addr, '/CUIA/PROGRAM_CHANGE', program, master_chan)
@@ -97,6 +97,15 @@ def load_zs3(zs3_id: Any) -> bool:
 def _get_master_chan() -> int:
     val = os.environ.get('ZYNTHIAN_MIDI_MASTER_CHANNEL', '16')
     return int(val) - 1
+
+
+def _get_bank_cc() -> int:
+    raw = os.environ.get('ZYNTHIAN_MIDI_MASTER_BANK_CHANGE_CCNUM', '0')
+    try:
+        return int(raw)
+    except (TypeError, ValueError) as exc:
+        LOGGER.warning('Invalid ZYNTHIAN_MIDI_MASTER_BANK_CHANGE_CCNUM %r: %s; defaulting to 0', raw, exc)
+        return 0
 
 
 def load_snapshot(bank: int, program: int) -> bool:
