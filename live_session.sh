@@ -26,5 +26,9 @@ fi
 # Default port
 export LIVE_SESSION_PORT="${LIVE_SESSION_PORT:-8080}"
 
+# MPD server for play-along (winthian on the LAN)
+export ZYNTHIAN_MPD_HOST="${ZYNTHIAN_MPD_HOST:-winthian.local}"
+export ZYNTHIAN_MPD_PORT="${ZYNTHIAN_MPD_PORT:-6600}"
+
 cd "$SCRIPT_DIR"
 exec ./live_session_server.py
