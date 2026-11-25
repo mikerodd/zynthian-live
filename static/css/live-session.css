@@ -249,32 +249,27 @@ body {
     color: #fff;
 }
 
-.chart-nav.with-controls {
-    flex-wrap: wrap;
-}
-
 .chart-body.with-controls {
-    padding-top: 330px;
+    padding-top: 90px;
 }
 
 .play-along-bar {
-    -webkit-flex-basis: 100%; flex-basis: 100%;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    margin-top: 8px;
+    margin-left: 12px;
 }
 
 .pa-btn {
-    min-width: 176px;
-    min-height: 176px;
-    padding: 0 32px;
-    font-size: 60px;
+    min-width: 70px;
+    min-height: 50px;
+    padding: 0px 0px;
+    font-size: 24px;
     color: #333;
     background: #ddd;
     border: none;
-    border-radius: 24px;
+    border-radius: 10px;
     cursor: pointer;
 }
 
