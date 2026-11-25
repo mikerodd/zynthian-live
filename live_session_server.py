@@ -85,6 +85,14 @@ class ChartRenderHandler(BaseHandler):
         zs3_id = paths['zs3_id']
         if zs3_id:
             load_zs3(zs3_id)
+        commands = paths.get('winthian_commands') or []
+        if not commands:
+            commands = ['plugin unload all']
+        for cmd in commands:
+            try:
+                spaph_client.command(cmd)
+            except OSError as e:
+                logging.error('winthian command failed: %s', e)
         controls_html = ''
         if PLAY_ALONG['enabled']:
             controls_html = build_play_along_html(gig_id, track_idx, paths['play_along'])
