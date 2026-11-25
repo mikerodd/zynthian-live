@@ -254,7 +254,7 @@ body {
 }
 
 .chart-body.with-controls {
-    padding-top: 185px;
+    padding-top: 330px;
 }
 
 .play-along-bar {
@@ -267,14 +267,14 @@ body {
 }
 
 .pa-btn {
-    min-width: 88px;
-    min-height: 88px;
-    padding: 0 16px;
-    font-size: 30px;
+    min-width: 176px;
+    min-height: 176px;
+    padding: 0 32px;
+    font-size: 60px;
     color: #333;
     background: #ddd;
     border: none;
-    border-radius: 12px;
+    border-radius: 24px;
     cursor: pointer;
 }
 
@@ -287,7 +287,7 @@ body {
 
 .pa-status {
     flex-basis: 100%;
-    font-size: 13px;
+    font-size: 26px;
     color: #b71c1c;
     min-height: 1em;
 }
